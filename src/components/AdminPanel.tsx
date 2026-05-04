@@ -11,13 +11,32 @@ export function AdminPanel() {
   const [activeTab, setActiveTab] = useState<'content' | 'inbox' | 'portfolio'>('content');
   const [localContent, setLocalContent] = useState(content);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email === 'h.malimran46@gmail.com' && password === 'admin123') { // Mock password
-      setIsAdmin(true);
-      setError('');
-    } else {
-      setError('Invalid credentials');
+    try {
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      if (res.ok) {
+        setIsAdmin(true);
+        setError('');
+      } else {
+        const data = await res.json();
+        setError(data.error || 'Invalid credentials');
+      }
+    } catch (err) {
+      setError('Strategic connection failed');
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/logout', { method: 'POST' });
+      setIsAdmin(false);
+    } catch (err) {
+      console.error("Logout failed");
     }
   };
 
@@ -114,7 +133,7 @@ export function AdminPanel() {
               <Save className="w-3 h-3" /> Save Changes
             </button>
             <button 
-              onClick={() => setIsAdmin(false)}
+              onClick={handleLogout}
               className="p-3 glass rounded-xl text-red-500 hover:bg-red-500/10 transition-all"
             >
               <LogOut className="w-5 h-5" />

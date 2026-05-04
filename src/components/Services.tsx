@@ -37,14 +37,16 @@ export function About() {
                referrerPolicy="no-referrer"
              />
              
-             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-4 backdrop-blur-sm">
-                <label className="cursor-pointer bg-brand-primary text-black px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-3 hover:scale-110 shadow-[0_0_40px_rgba(0,255,156,0.5)] transition-all active:scale-95">
-                  <PenTool className="w-4 h-4" />
-                  REPLACE PORTRAIT
-                  <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
-                </label>
-                <p className="text-white/80 text-[9px] font-bold uppercase tracking-[0.3em] bg-black/40 px-3 py-1 rounded-full backdrop-blur-md">Update Professional Identity</p>
-             </div>
+             {isAdmin && (
+               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-4 backdrop-blur-sm">
+                  <label className="cursor-pointer bg-brand-primary text-black px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-3 hover:scale-110 shadow-[0_0_40px_rgba(0,255,156,0.5)] transition-all active:scale-95">
+                    <PenTool className="w-4 h-4" />
+                    REPLACE PORTRAIT
+                    <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
+                  </label>
+                  <p className="text-white/80 text-[9px] font-bold uppercase tracking-[0.3em] bg-black/40 px-3 py-1 rounded-full backdrop-blur-md">Update Professional Identity</p>
+               </div>
+             )}
           </div>
           <div className="absolute -bottom-10 -right-4 glass p-10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-brand-primary/20 backdrop-blur-3xl group">
             <p className="text-brand-primary font-black text-6xl mb-1 drop-shadow-[0_0_15px_rgba(0,255,156,0.3)] group-hover:scale-110 transition-transform">5+</p>

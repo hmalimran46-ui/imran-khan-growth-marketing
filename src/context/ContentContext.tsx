@@ -58,32 +58,80 @@ interface ContentContextType {
 const ContentContext = createContext<ContentContextType | undefined>(undefined);
 
 export function ContentProvider({ children }: { children: React.ReactNode }) {
-  const [content, setContent] = useState<ContentState>(() => {
-    const saved = localStorage.getItem('site_content');
-    return saved ? JSON.parse(saved) : defaultContent;
-  });
+  const [content, setContent] = useState<ContentState>(defaultContent);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isContactModalOpen, setContactModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    localStorage.setItem('site_content', JSON.stringify(content));
-  }, [content]);
-
-  const updateContent = (newContent: Partial<ContentState>) => {
-    setContent(prev => ({ ...prev, ...newContent }));
-  };
-
-  const addMessage = (msg: Omit<Message, 'id' | 'timestamp'>) => {
-    const newMessage = {
-      ...msg,
-      id: Math.random().toString(36).substr(2, 9),
-      timestamp: Date.now()
+    const init = async () => {
+      try {
+        const [contentRes, authRes] = await Promise.all([
+          fetch('/api/content'),
+          fetch('/api/auth-status')
+        ]);
+        
+        if (contentRes.ok) {
+          const data = await contentRes.json();
+          setContent(data);
+        }
+        
+        if (authRes.ok) {
+          const { isAdmin } = await authRes.json();
+          setIsAdmin(isAdmin);
+        }
+      } catch (error) {
+        console.error("Initialization failed:", error);
+      } finally {
+        setIsLoading(false);
+      }
     };
-    setContent(prev => ({
-      ...prev,
-      messages: [newMessage, ...prev.messages]
-    }));
+    init();
+  }, []);
+
+  const updateContent = async (newContent: Partial<ContentState>) => {
+    const updated = { ...content, ...newContent };
+    
+    // Update local state immediately for UX
+    setContent(updated);
+
+    try {
+      const res = await fetch('/api/content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated)
+      });
+      if (!res.ok) throw new Error("Failed to sync with server");
+    } catch (error) {
+      console.error(error);
+      alert("Operational sync failed. Changes may not be persistent across sessions.");
+    }
   };
+
+  const addMessage = async (msg: Omit<Message, 'id' | 'timestamp'>) => {
+    try {
+      const res = await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(msg)
+      });
+      if (res.ok) {
+        // Refresh content to show new message in admin panel
+        const contentRes = await fetch('/api/content');
+        if (contentRes.ok) {
+          setContent(await contentRes.json());
+        }
+      }
+    } catch (error) {
+      console.error("Failed to transmit message:", error);
+    }
+  };
+
+  if (isLoading) {
+    return <div className="min-h-screen bg-[#00040a] flex items-center justify-center">
+      <div className="w-16 h-16 border-4 border-brand-primary border-t-transparent rounded-full animate-spin" />
+    </div>;
+  }
 
   return (
     <ContentContext.Provider value={{ 
