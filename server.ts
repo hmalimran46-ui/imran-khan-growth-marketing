@@ -135,10 +135,15 @@ async function startServer() {
   app.post("/api/content", authMiddleware, async (req, res) => {
     try {
       const newContent = req.body;
+      if (!newContent || typeof newContent !== 'object') {
+        throw new Error("Invalid payload signature received.");
+      }
       await fs.writeFile(CONTENT_FILE, JSON.stringify(newContent, null, 2));
+      console.log(`[Strategic Sync] Content successfully written to disk. Payload size: ${(JSON.stringify(newContent).length / 1024).toFixed(2)} KB`);
       res.json({ success: true });
     } catch (error) {
-      res.status(500).json({ error: "Failed to update content" });
+      console.error("[Critical Error] Data Synchronization Failure:", error);
+      res.status(500).json({ error: "Failed to persist operational data." });
     }
   });
 

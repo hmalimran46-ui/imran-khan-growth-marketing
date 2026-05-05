@@ -89,16 +89,6 @@ export function About() {
                   <p className="text-white/40 text-[8px] font-bold uppercase tracking-[0.4em] mt-4">Secure Asset Replacement Mode</p>
                </div>
              )}
-
-             {!isAdmin && (
-               <Link 
-                 to="/admin" 
-                 className="absolute top-6 right-6 glass p-4 rounded-2xl border-white/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-3 hover:bg-brand-primary hover:text-black transition-all group/btn shadow-xl"
-               >
-                 <PenTool className="w-4 h-4 text-brand-primary group-hover/btn:text-black" />
-                 <span className="text-[10px] font-black uppercase tracking-widest text-white group-hover/btn:text-black">LOGIN TO EDIT IMAGE</span>
-               </Link>
-             )}
           </div>
           <div className="absolute -bottom-10 -right-4 glass p-10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-brand-primary/20 backdrop-blur-3xl group">
             <p className="text-brand-primary font-black text-6xl mb-1 drop-shadow-[0_0_15px_rgba(0,255,156,0.3)] group-hover:scale-110 transition-transform">{content.about.experienceYears}</p>

@@ -1,12 +1,16 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-interface Message {
+export type MessageStatus = 'pending' | 'approved' | 'in_progress' | 'delivered' | 'rejected';
+
+export interface Message {
   id: string;
+  orderId: string;
   name: string;
   email: string;
   subject: string;
   text: string;
-  timestamp: number;
+  status: MessageStatus;
+  timestamp: string;
 }
 
 interface ServiceItem {
@@ -96,8 +100,9 @@ const defaultContent: ContentState = {
 
 interface ContentContextType {
   content: ContentState;
-  updateContent: (newContent: Partial<ContentState>) => void;
-  addMessage: (msg: Omit<Message, 'id' | 'timestamp'>) => void;
+  updateContent: (newContent: Partial<ContentState>) => Promise<void>;
+  addMessage: (msg: Omit<Message, 'id' | 'timestamp' | 'status' | 'orderId'>) => Promise<string>;
+  updateMessageStatus: (messageId: string, status: MessageStatus) => Promise<void>;
   isAdmin: boolean;
   setIsAdmin: (val: boolean) => void;
   isContactModalOpen: boolean;
@@ -126,14 +131,14 @@ export function ContentProvider({ children }: { children: React.ReactNode }) {
           setContent(prev => ({
             ...prev,
             ...data,
-            hero: { ...prev.hero, ...(data.hero || {}) },
-            about: { ...prev.about, ...(data.about || {}) },
-            pricing: { ...prev.pricing, ...(data.pricing || {}) },
-            coverBanner: { ...prev.coverBanner, ...(data.coverBanner || {}) },
-            contact: { ...prev.contact, ...(data.contact || {}) },
-            services: data.services || prev.services || [],
-            portfolio: data.portfolio || prev.portfolio || [],
-            messages: data.messages || prev.messages || [],
+            hero: { ...(prev?.hero || defaultContent.hero), ...(data.hero || {}) },
+            about: { ...(prev?.about || defaultContent.about), ...(data.about || {}) },
+            pricing: { ...(prev?.pricing || defaultContent.pricing), ...(data.pricing || {}) },
+            coverBanner: { ...(prev?.coverBanner || defaultContent.coverBanner), ...(data.coverBanner || {}) },
+            contact: { ...(prev?.contact || defaultContent.contact), ...(data.contact || {}) },
+            services: data.services || prev?.services || defaultContent.services,
+            portfolio: data.portfolio || prev?.portfolio || defaultContent.portfolio,
+            messages: data.messages || prev?.messages || defaultContent.messages,
           }));
         }
         
@@ -151,41 +156,61 @@ export function ContentProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const updateContent = async (newContent: Partial<ContentState>) => {
-    const updated = { ...content, ...newContent };
+    let finalUpdated: ContentState = content;
     
-    // Update local state immediately for UX
-    setContent(updated);
+    // Update local state and capture the new state object
+    setContent(prev => {
+      finalUpdated = { ...prev, ...newContent };
+      return finalUpdated;
+    });
 
     try {
       const res = await fetch('/api/content', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updated)
+        body: JSON.stringify(finalUpdated)
       });
-      if (!res.ok) throw new Error("Failed to sync with server");
+      if (!res.ok) throw new Error("Synchronization failure with strategic server.");
     } catch (error) {
       console.error(error);
-      alert("Operational sync failed. Changes may not be persistent across sessions.");
+      alert("Operational sync failure. Changes may not be persistent across sessions.");
+      throw error;
     }
   };
 
-  const addMessage = async (msg: Omit<Message, 'id' | 'timestamp'>) => {
+  const addMessage = async (msg: Omit<Message, 'id' | 'timestamp' | 'status' | 'orderId'>): Promise<string> => {
+    const orderId = `IK-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    const newMessage: Message = {
+      ...msg,
+      id: Date.now().toString(),
+      orderId,
+      status: 'pending',
+      timestamp: new Date().toISOString(),
+    };
+    
+    // Update local state
+    const updatedMessages = [newMessage, ...content.messages];
+    setContent(prev => ({ ...prev, messages: updatedMessages }));
+
     try {
-      const res = await fetch('/api/messages', {
+      const res = await fetch('/api/content', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(msg)
+        body: JSON.stringify({ ...content, messages: updatedMessages })
       });
-      if (res.ok) {
-        // Refresh content to show new message in admin panel
-        const contentRes = await fetch('/api/content');
-        if (contentRes.ok) {
-          setContent(await contentRes.json());
-        }
-      }
+      if (!res.ok) throw new Error("Failed to sync message with server.");
+      return orderId;
     } catch (error) {
-      console.error("Failed to transmit message:", error);
+      console.error("Message sync error:", error);
+      return orderId;
     }
+  };
+
+  const updateMessageStatus = async (messageId: string, status: MessageStatus) => {
+    const updatedMessages = content.messages.map(m => 
+      m.id === messageId ? { ...m, status } : m
+    );
+    await updateContent({ messages: updatedMessages });
   };
 
   if (isLoading) {
@@ -199,6 +224,7 @@ export function ContentProvider({ children }: { children: React.ReactNode }) {
       content, 
       updateContent, 
       addMessage, 
+      updateMessageStatus,
       isAdmin, 
       setIsAdmin,
       isContactModalOpen,

@@ -13,11 +13,14 @@ export function AdminPanel() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'hero' | 'about' | 'services' | 'portfolio' | 'pricing' | 'contact' | 'inbox' | 'banner'>('hero');
   const [localContent, setLocalContent] = useState(content);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
+
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, target: 'about' | 'banner') => {
     const file = e.target.files?.[0];
@@ -27,6 +30,7 @@ export function AdminPanel() {
         return;
       }
       setIsUploading(true);
+      setUploadStatus("Processing visual asset...");
       const reader = new FileReader();
       reader.onloadend = () => {
         if (target === 'about') {
@@ -35,6 +39,13 @@ export function AdminPanel() {
           setLocalContent({ ...localContent, coverBanner: { ...localContent.coverBanner, image: reader.result as string } });
         }
         setIsUploading(false);
+        setUploadStatus("Strategic asset synchronized.");
+        setTimeout(() => setUploadStatus(null), 3000);
+      };
+      reader.onerror = () => {
+        setIsUploading(false);
+        setUploadStatus("Upload failed.");
+        setTimeout(() => setUploadStatus(null), 3000);
       };
       reader.readAsDataURL(file);
     }
@@ -69,9 +80,16 @@ export function AdminPanel() {
     }
   };
 
-  const handleSave = () => {
-    updateContent(localContent);
-    alert('Strategic Data Synchronized Successfully.');
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await updateContent(localContent);
+      alert('Strategic Data Synchronized Successfully.');
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const deleteMessage = (id: string) => {
@@ -115,26 +133,30 @@ export function AdminPanel() {
             <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest mt-2">Authorized Access Required</p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-6">
+          <form onSubmit={handleLogin} className="space-y-6" autoComplete="off">
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 ml-1">Admin Identity</label>
+              <label className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 ml-1">Secure Identifier</label>
               <input 
-                type="email" 
+                type="text" 
+                name="admin-id"
+                autoComplete="off"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-brand-primary transition-all text-white font-light"
-                placeholder="h.malimran46@gmail.com"
+                placeholder="••••••••••••"
                 required
               />
             </div>
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 ml-1">Security Key</label>
+              <label className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 ml-1">Access Protocol</label>
               <input 
                 type="password" 
+                name="admin-pw"
+                autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-brand-primary transition-all text-white"
-                placeholder="••••••••"
+                placeholder="••••••••••••"
                 required
               />
             </div>
@@ -191,9 +213,11 @@ export function AdminPanel() {
         <div className="p-6 mt-auto border-t border-white/5 space-y-4">
           <button 
             onClick={handleSave}
-            className="w-full py-4 bg-brand-primary text-black rounded-xl font-black text-[10px] uppercase tracking-widest hover:scale-105 transition-all shadow-lg flex items-center justify-center gap-2"
+            disabled={isSaving}
+            className="w-full py-4 bg-brand-primary text-black rounded-xl font-black text-[10px] uppercase tracking-widest hover:scale-105 transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Save className="w-3 h-3" /> Save Changes
+            {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+            {isSaving ? 'Syncing...' : 'Save Changes'}
           </button>
           <button 
             onClick={handleLogout}
@@ -346,8 +370,19 @@ export function AdminPanel() {
                             <Loader2 className="w-8 h-8 text-brand-primary animate-spin" />
                           </div>
                         )}
+                        {uploadStatus && !isUploading && (
+                          <div className="absolute top-4 right-4 bg-brand-primary text-black px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest shadow-xl animate-bounce">
+                            {uploadStatus}
+                          </div>
+                        )}
                       </div>
-                      <p className="text-[8px] text-gray-600 uppercase tracking-widest text-center italic">Surgical Asset replacement protocol active.</p>
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <div className={`w-2 h-2 rounded-full ${localContent.about.profileImage !== content.about.profileImage ? 'bg-yellow-500 animate-pulse' : 'bg-brand-primary'}`} />
+                        <span className="text-[8px] font-black uppercase tracking-widest text-gray-500">
+                          {localContent.about.profileImage !== content.about.profileImage ? 'Unsaved Preview' : 'Active Profile Asset'}
+                        </span>
+                      </div>
+                      <p className="text-[8px] text-gray-600 uppercase tracking-widest text-center italic leading-relaxed px-4">Surgical Asset replacement protocol active. Review preview before syncing.</p>
                     </div>
                     <div className="w-full md:w-2/3 space-y-6">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -586,6 +621,43 @@ export function AdminPanel() {
                       className="glass p-10 rounded-[2.5rem] border-white/5 hover:border-brand-primary/20 transition-all group relative overflow-hidden"
                     >
                       <div className="absolute top-0 right-0 w-1 h-full bg-brand-primary/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      
+                      <div className="flex items-center justify-between mb-8 border-b border-white/5 pb-4">
+                        <div className="flex items-center gap-4">
+                          <div className="bg-brand-primary/10 px-4 py-2 rounded-xl">
+                            <span className="text-[9px] font-black text-brand-primary uppercase tracking-[0.2em]">Order Identity</span>
+                            <p className="text-sm font-mono font-black text-white">{msg.orderId}</p>
+                          </div>
+                          <div>
+                            <span className="text-[9px] font-black text-gray-600 uppercase tracking-[0.2em] block mb-1">Deployment Status</span>
+                            <div className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg inline-block
+                              ${msg.status === 'pending' ? 'bg-yellow-500/20 text-yellow-500' : 
+                                msg.status === 'approved' ? 'bg-green-500/20 text-green-500' :
+                                msg.status === 'in_progress' ? 'bg-blue-500/20 text-blue-500' :
+                                msg.status === 'delivered' ? 'bg-brand-primary/20 text-brand-primary' :
+                                'bg-red-500/20 text-red-500'}`}
+                            >
+                              {msg.status.replace('_', ' ')}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                           <label className="text-[9px] font-black text-gray-600 uppercase tracking-widest mr-2">Transition Logic:</label>
+                           {(['pending', 'approved', 'in_progress', 'delivered', 'rejected'] as const).map(s => (
+                             <button
+                               key={s}
+                               onClick={() => {
+                                 const updated = localContent.messages.map(m => m.id === msg.id ? { ...m, status: s } : m);
+                                 setLocalContent({ ...localContent, messages: updated });
+                               }}
+                               className={`px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${msg.status === s ? 'bg-brand-primary text-black' : 'bg-white/5 text-gray-500 hover:text-white'}`}
+                             >
+                               {s.split('_')[0]}
+                             </button>
+                           ))}
+                        </div>
+                      </div>
+
                       <div className="flex flex-col md:flex-row gap-10">
                          <div className="md:w-1/3">
                             <div className="space-y-6">

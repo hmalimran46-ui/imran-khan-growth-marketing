@@ -1,12 +1,12 @@
 import { motion } from 'motion/react';
-import { Menu, X, ArrowUpRight, ShieldCheck, Settings } from 'lucide-react';
+import { Menu, X, ArrowUpRight, ShieldCheck, Settings, Package } from 'lucide-react';
 import { useState } from 'react';
 import { useContent } from '../context/ContentContext';
 import { Link } from 'react-router-dom';
 
-export default function Navbar() {
+export default function Navbar({ onOpenTracker }: { onOpenTracker?: () => void }) {
   const [isOpen, setIsOpen] = useState(false);
-  const { isAdmin } = useContent();
+  const { isAdmin, setContactModalOpen } = useContent();
 
   const navLinks = [
     { name: 'Home', href: '#home' },
@@ -44,14 +44,38 @@ export default function Navbar() {
             <a
               key={link.name}
               href={link.href}
-              className="text-[10px] font-black text-gray-500 hover:text-brand-primary transition-all uppercase tracking-[0.2em]"
+              className="text-[10px] font-black text-gray-400 hover:text-brand-primary transition-all uppercase tracking-[0.3em] relative group"
             >
               {link.name}
+              <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-brand-primary transition-all group-hover:w-full" />
             </a>
           ))}
-          <a href="#contact" className="px-8 py-3 bg-white text-black text-[10px] font-black rounded-xl hover:bg-brand-primary hover:scale-105 transition-all flex items-center gap-2 group uppercase tracking-widest">
-            CONTACT <ArrowUpRight className="w-3 h-3 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-          </a>
+          
+          <div className="h-4 w-[1px] bg-white/10 mx-2" />
+
+          {/* Admin Command Access */}
+          <button 
+            onClick={onOpenTracker}
+            className="px-6 py-3 bg-white/5 text-white text-[10px] font-black rounded-xl border border-white/10 hover:bg-white/10 transition-all flex items-center gap-2 uppercase tracking-widest"
+          >
+            <Package className="w-3.5 h-3.5 text-brand-primary" /> TRACK ORDER
+          </button>
+
+          <Link 
+            to="/admin"
+            className="w-10 h-10 rounded-xl glass border border-white/10 flex items-center justify-center hover:border-brand-primary/50 transition-all group/admin relative"
+            title="Admin Command Center"
+          >
+            <Settings className={`w-4 h-4 transition-all duration-500 ${isAdmin ? 'text-brand-primary animate-pulse' : 'text-gray-500 group-hover/admin:text-brand-primary group-hover/admin:rotate-90'}`} />
+            {isAdmin && <span className="absolute -top-1 -right-1 w-2 h-2 bg-brand-primary rounded-full animate-ping" />}
+          </Link>
+
+          <button 
+            onClick={() => setContactModalOpen(true)}
+            className="px-6 py-3 bg-brand-primary text-black text-[10px] font-black rounded-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2 group uppercase tracking-widest shadow-[0_10px_30px_rgba(0,255,156,0.3)]"
+          >
+            CONTACT <ArrowUpRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+          </button>
         </div>
 
         {/* Mobile Toggle */}

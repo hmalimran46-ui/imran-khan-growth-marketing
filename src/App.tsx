@@ -3,14 +3,17 @@ import { Hero, CoverBanner, ExpertiseSlider, AdvancedSkills } from './components
 import { About, Services } from './components/Services';
 import { Portfolio, Pricing } from './components/Portfolio';
 import { Contact, Footer, ContactModal, FloatingWhatsApp } from './components/Contact';
+import { OrderTracker } from './components/OrderTracker';
 import { AdminPanel } from './components/AdminPanel';
 import { ContentProvider } from './context/ContentContext';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import React, { useState } from 'react';
 
 function MainSite() {
+  const [isTrackerOpen, setIsTrackerOpen] = useState(false);
   return (
     <div className="min-h-screen relative overflow-x-hidden bg-[#00040a]">
-      <Navbar />
+      <Navbar onOpenTracker={() => setIsTrackerOpen(true)} />
       <Hero />
       <CoverBanner />
       <ExpertiseSlider />
@@ -30,6 +33,7 @@ function MainSite() {
       {/* Global Modals & Fixed Elements */}
       <ContactModal />
       <FloatingWhatsApp />
+      <OrderTracker isOpen={isTrackerOpen} onClose={() => setIsTrackerOpen(false)} />
     </div>
   );
 }

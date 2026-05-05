@@ -8,22 +8,28 @@ export function ContactModal() {
   const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
   const [sent, setSent] = useState(false);
 
+  const [orderId, setOrderId] = useState<string | null>(null);
+
   if (!isContactModalOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    addMessage({
+    const id = await addMessage({
       name: formData.name,
       email: formData.email,
       subject: formData.subject,
-      text: formData.message
+      text: formData.message,
+      service: 'Consultation',
+      budget: 'TBD'
     });
+    setOrderId(id);
     setSent(true);
     setTimeout(() => {
       setSent(false);
+      setOrderId(null);
       setContactModalOpen(false);
       setFormData({ name: '', email: '', subject: '', message: '' });
-    }, 2000);
+    }, 8000);
   };
 
   return (
@@ -50,7 +56,15 @@ export function ContactModal() {
               <Send className="text-brand-primary w-8 h-8" />
             </div>
             <h3 className="text-2xl font-black uppercase tracking-tighter text-white">Message Transmitted</h3>
-            <p className="text-gray-400 mt-2 text-sm uppercase tracking-widest font-bold">I'll get back to you shortly.</p>
+            <p className="text-gray-400 mt-2 text-sm uppercase tracking-widest font-bold mb-6">I'll get back to you shortly.</p>
+            
+            {orderId && (
+              <div className="bg-white/5 border border-brand-primary/20 rounded-2xl p-6 text-center">
+                <p className="text-[10px] font-black uppercase tracking-widest text-brand-primary mb-2">Track Your Strategic Order</p>
+                <div className="text-2xl font-mono font-black text-white tracking-[0.2em]">{orderId}</div>
+                <p className="text-[9px] text-gray-500 mt-3 italic font-medium">Use this code to check your order status.</p>
+              </div>
+            )}
           </div>
         ) : (
           <>
@@ -110,20 +124,25 @@ export function Contact() {
   const { content, setContactModalOpen, addMessage } = useContent();
   const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
   const [sent, setSent] = useState(false);
+  const [orderId, setOrderId] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    addMessage({
+    const id = await addMessage({
       name: formData.name,
       email: formData.email,
       subject: formData.subject,
-      text: formData.message
+      text: formData.message,
+      service: 'Direct Consultation',
+      budget: 'Business'
     });
+    setOrderId(id);
     setSent(true);
     setTimeout(() => {
       setSent(false);
+      setOrderId(null);
       setFormData({ name: '', email: '', subject: '', message: '' });
-    }, 3000);
+    }, 10000);
   };
 
   return (
@@ -179,7 +198,18 @@ export function Contact() {
                 <Send className="text-brand-primary w-8 h-8" />
               </div>
               <h3 className="text-2xl font-black uppercase tracking-tighter text-white">Message Inbound</h3>
-              <p className="text-gray-400 mt-2 text-sm uppercase tracking-widest font-bold">Expect a response within 24 hours.</p>
+              <p className="text-gray-400 mt-2 text-sm uppercase tracking-widest font-bold mb-8">Expect a response within 24 hours.</p>
+
+              {orderId && (
+                <div className="bg-white/5 border border-brand-primary/10 rounded-2xl p-8 w-full">
+                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-brand-primary mb-3">Unique Order Identity</p>
+                  <div className="text-3xl font-mono font-black text-white tracking-[0.1em]">{orderId}</div>
+                  <div className="mt-4 flex items-center justify-center gap-2">
+                    <div className="w-1.5 h-1.5 bg-brand-primary rounded-full animate-pulse" />
+                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500">Live Status Tracking Active</span>
+                  </div>
+                </div>
+              )}
             </motion.div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-8 relative z-10">
