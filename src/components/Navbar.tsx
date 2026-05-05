@@ -1,9 +1,12 @@
 import { motion } from 'motion/react';
-import { Menu, X, ArrowUpRight } from 'lucide-react';
+import { Menu, X, ArrowUpRight, ShieldCheck, Settings } from 'lucide-react';
 import { useState } from 'react';
+import { useContent } from '../context/ContentContext';
+import { Link } from 'react-router-dom';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const { isAdmin } = useContent();
 
   const navLinks = [
     { name: 'Home', href: '#home' },
@@ -25,7 +28,14 @@ export default function Navbar() {
           <div className="w-10 h-10 bg-brand-primary rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(0,255,156,0.3)]">
             <span className="text-black font-black text-xl italic italic">I</span>
           </div>
-          <span className="font-black text-white tracking-tighter uppercase text-sm hidden sm:block">IMRAN <span className="text-brand-primary">KHAN</span></span>
+          <div className="flex flex-col">
+            <span className="font-black text-white tracking-tighter uppercase text-sm hidden sm:block leading-none">IMRAN <span className="text-brand-primary">KHAN</span></span>
+            {isAdmin && (
+              <Link to="/admin" className="flex items-center gap-1.5 text-[7px] font-black uppercase tracking-[0.2em] text-brand-primary mt-1 animate-pulse">
+                <ShieldCheck className="w-2.5 h-2.5" /> Admin Secure Session
+              </Link>
+            )}
+          </div>
         </div>
 
         {/* Desktop Menu */}

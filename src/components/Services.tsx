@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { Target, Users, Search, Youtube, PenTool, CheckCircle2, ChevronDown, Globe, Share2, MessageSquare, Zap, BarChart3, Mail, ShoppingCart, Key, Settings, Loader2 } from 'lucide-react';
+import { Target, Users, Search, Youtube, PenTool, CheckCircle2, ChevronDown, Globe, Share2, MessageSquare, Zap, BarChart3, Mail, ShoppingCart, Key, Settings, Loader2, Upload } from 'lucide-react';
 import React, { useState, useRef } from 'react';
 import { useContent } from '../context/ContentContext';
 import { Link } from 'react-router-dom';
@@ -61,29 +61,43 @@ export function About() {
              )}
              
              {isAdmin && !isUploading && (
-               <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-500 flex flex-col items-center justify-center gap-4 backdrop-blur-md z-10">
-                  <button 
-                    onClick={() => fileInputRef.current?.click()}
-                    className="cursor-pointer bg-brand-primary text-black px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-3 hover:scale-110 shadow-[0_0_40px_rgba(0,255,156,0.5)] transition-all active:scale-95"
-                  >
-                    <PenTool className="w-4 h-4" />
-                    REPLACE PORTRAIT
-                  </button>
-                  <input 
-                    type="file" 
-                    ref={fileInputRef}
-                    className="hidden" 
-                    accept="image/*" 
-                    onChange={handleImageChange} 
-                  />
-                  <Link 
-                    to="/admin" 
-                    className="bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest border border-white/10 transition-all flex items-center gap-2"
-                  >
-                    <Settings className="w-3 h-3" /> MANAGE CONTENT
-                  </Link>
-                  <p className="text-white/40 text-[8px] font-bold uppercase tracking-[0.4em] mt-2">Elite Command Overlay</p>
+               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-500 flex flex-col items-center justify-center gap-4 backdrop-blur-md z-10">
+                  <div className="bg-black/60 p-8 rounded-[2rem] border border-white/10 flex flex-col items-center gap-4 scale-90 group-hover:scale-100 transition-transform shadow-2xl">
+                    <div className="w-12 h-12 bg-brand-primary rounded-2xl flex items-center justify-center shadow-[0_0_20px_rgba(0,255,156,0.3)]">
+                      <Upload className="text-black w-6 h-6" />
+                    </div>
+                    <button 
+                      onClick={() => fileInputRef.current?.click()}
+                      className="cursor-pointer bg-brand-primary text-black px-10 py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-3 hover:scale-110 shadow-[0_0_40px_rgba(0,255,156,0.5)] transition-all active:scale-95"
+                    >
+                      UPLOAD YOUR PHOTO
+                    </button>
+                    <input 
+                      type="file" 
+                      ref={fileInputRef}
+                      className="hidden" 
+                      accept="image/*" 
+                      onChange={handleImageChange} 
+                    />
+                    <Link 
+                      to="/admin" 
+                      className="text-white hover:text-brand-primary font-black text-[10px] uppercase tracking-widest flex items-center gap-2 transition-colors mt-2"
+                    >
+                      <Settings className="w-3 h-3" /> COMMAND CENTER
+                    </Link>
+                  </div>
+                  <p className="text-white/40 text-[8px] font-bold uppercase tracking-[0.4em] mt-4">Secure Asset Replacement Mode</p>
                </div>
+             )}
+
+             {!isAdmin && (
+               <Link 
+                 to="/admin" 
+                 className="absolute top-6 right-6 glass p-4 rounded-2xl border-white/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-3 hover:bg-brand-primary hover:text-black transition-all group/btn shadow-xl"
+               >
+                 <PenTool className="w-4 h-4 text-brand-primary group-hover/btn:text-black" />
+                 <span className="text-[10px] font-black uppercase tracking-widest text-white group-hover/btn:text-black">LOGIN TO EDIT IMAGE</span>
+               </Link>
              )}
           </div>
           <div className="absolute -bottom-10 -right-4 glass p-10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-brand-primary/20 backdrop-blur-3xl group">
