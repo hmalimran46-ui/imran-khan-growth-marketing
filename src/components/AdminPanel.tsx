@@ -143,7 +143,7 @@ export function AdminPanel() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-brand-primary transition-all text-white font-light"
-                placeholder="••••••••••••"
+                placeholder="Secure ID Required"
                 required
               />
             </div>
@@ -156,7 +156,7 @@ export function AdminPanel() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-brand-primary transition-all text-white"
-                placeholder="••••••••••••"
+                placeholder="Access Key Required"
                 required
               />
             </div>

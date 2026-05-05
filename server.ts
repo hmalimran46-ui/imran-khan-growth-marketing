@@ -94,24 +94,32 @@ async function startServer() {
   // Login
   app.post("/api/login", (req, res) => {
     const { email, password } = req.body;
+    // Identity Verification Logic (Server-Side)
     const adminEmail = process.env.ADMIN_EMAIL || "h.malimran46@gmail.com";
-    const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
+    const adminPassword = process.env.ADMIN_PASSWORD || "Hm4648@#";
 
     if (email === adminEmail && password === adminPassword) {
+      console.log(`[Auth] Secure session established for authorized user.`);
       res.cookie("admin_session", "true", { 
         httpOnly: true, 
-        secure: process.env.NODE_ENV === "production",
-        maxAge: 86400000 // 1 day
+        secure: true,
+        sameSite: 'none',
+        maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
       });
       res.json({ success: true });
     } else {
-      res.status(401).json({ error: "Invalid credentials" });
+      console.warn(`[Auth] Failed login attempt for: ${email}`);
+      res.status(401).json({ error: "Invalid identity or access protocol." });
     }
   });
 
   // Logout
   app.post("/api/logout", (req, res) => {
-    res.clearCookie("admin_session");
+    res.clearCookie("admin_session", {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none'
+    });
     res.json({ success: true });
   });
 
