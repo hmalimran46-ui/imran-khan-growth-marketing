@@ -107,7 +107,7 @@ export function ContactModal() {
 }
 
 export function Contact() {
-  const { setContactModalOpen, addMessage } = useContent();
+  const { content, setContactModalOpen, addMessage } = useContent();
   const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
   const [sent, setSent] = useState(false);
 
@@ -137,21 +137,21 @@ export function Contact() {
           
           <div className="mb-14 flex flex-col sm:flex-row items-center gap-10">
             <a 
-              href="https://wa.me/01986620247" 
+              href={`https://wa.me/${content.contact.whatsapp}`} 
               target="_blank" 
               rel="noopener noreferrer"
               className="flex items-center gap-3 group"
             >
                <MessageCircle className="w-5 h-5 text-[#25D366] group-hover:scale-110 transition-transform" />
-               <span className="text-white text-lg font-bold group-hover:text-brand-primary transition-colors tracking-tight">01986620247</span>
+               <span className="text-white text-lg font-bold group-hover:text-brand-primary transition-colors tracking-tight">{content.contact.whatsapp}</span>
             </a>
 
             <a 
-              href="mailto:h.malimran46@gmail.com" 
+              href={`mailto:${content.contact.email}`} 
               className="flex items-center gap-3 group"
             >
                <Mail className="w-5 h-5 text-brand-primary group-hover:scale-110 transition-transform" />
-               <span className="text-white text-lg font-bold group-hover:text-brand-primary transition-colors tracking-tight">h.malimran46@gmail.com</span>
+               <span className="text-white text-lg font-bold group-hover:text-brand-primary transition-colors tracking-tight">{content.contact.email}</span>
             </a>
           </div>
 
@@ -244,14 +244,15 @@ export function Contact() {
 }
 
 export function Footer() {
+  const { content } = useContent();
   return (
     <footer className="py-20 px-6 border-t border-white/5 bg-[#000810]">
       <div className="max-w-7xl mx-auto flex flex-col items-center">
         <div className="flex flex-col items-center mb-12">
-          <div className="text-3xl font-black italic tracking-tighter mb-2">
-            IMRAN<span className="text-brand-primary">KHAN</span>
+          <div className="text-3xl font-black italic tracking-tighter mb-2 uppercase">
+            {content.about.name.split(' ')[0]}<span className="text-brand-primary">{content.about.name.split(' ').slice(1).join(' ')}</span>
           </div>
-          <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.4em] text-center">Elite Growth Marketing Strategist</p>
+          <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.4em] text-center">{content.about.role}</p>
         </div>
 
         <div className="flex gap-10 mb-12">
@@ -289,9 +290,10 @@ export function Footer() {
 }
 
 export function FloatingWhatsApp() {
+  const { content } = useContent();
   return (
     <a 
-      href="https://wa.me/01986620247" 
+      href={`https://wa.me/${content.contact.whatsapp}`} 
       target="_blank" 
       rel="noopener noreferrer"
       className="fixed bottom-8 right-8 w-16 h-16 bg-[#25D366] rounded-full flex items-center justify-center shadow-[0_10px_30px_rgba(37,211,102,0.4)] hover:scale-110 active:scale-95 transition-all z-[80] group"

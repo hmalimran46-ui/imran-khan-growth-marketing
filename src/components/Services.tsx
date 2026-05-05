@@ -1,17 +1,31 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { Target, Users, Search, Youtube, PenTool, CheckCircle2, ChevronDown, Globe, Share2, MessageSquare, Zap, BarChart3, Mail, ShoppingCart, Key } from 'lucide-react';
-import React, { useState } from 'react';
+import { Target, Users, Search, Youtube, PenTool, CheckCircle2, ChevronDown, Globe, Share2, MessageSquare, Zap, BarChart3, Mail, ShoppingCart, Key, Settings, Loader2 } from 'lucide-react';
+import React, { useState, useRef } from 'react';
 import { useContent } from '../context/ContentContext';
+import { Link } from 'react-router-dom';
 
 export function About() {
   const { content, updateContent, isAdmin } = useContent();
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        alert("Strategic Asset too large. Please limit to 2MB.");
+        return;
+      }
+      
+      setIsUploading(true);
       const reader = new FileReader();
       reader.onloadend = () => {
-        updateContent({ about: { ...content.about, profileImage: reader.result as string } });
+        updateContent({ about: { ...content.about, profileImage: reader.result as string } })
+          .finally(() => setIsUploading(false));
+      };
+      reader.onerror = () => {
+        console.error("FileReader failed");
+        setIsUploading(false);
       };
       reader.readAsDataURL(file);
     }
@@ -32,24 +46,48 @@ export function About() {
           <div className="aspect-[4/5] rounded-[3rem] overflow-hidden glass border-white/10 group relative shadow-[0_40px_100px_rgba(0,0,0,0.8)]">
              <img
                src={content.about.profileImage}
-               alt="Imran Khan Growth Marketing Expert"
-               className="w-full h-full object-cover transition-all duration-1000 group-hover:scale-105"
+               alt="Growth Marketing Specialist Identity"
+               className={`w-full h-full object-cover transition-all duration-1000 group-hover:scale-105 ${isUploading ? 'opacity-50 blur-sm' : ''}`}
                referrerPolicy="no-referrer"
              />
              
-             {isAdmin && (
-               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-4 backdrop-blur-sm">
-                  <label className="cursor-pointer bg-brand-primary text-black px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-3 hover:scale-110 shadow-[0_0_40px_rgba(0,255,156,0.5)] transition-all active:scale-95">
+             {isUploading && (
+               <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-20">
+                  <div className="flex flex-col items-center gap-4">
+                    <Loader2 className="w-10 h-10 text-brand-primary animate-spin" />
+                    <p className="text-brand-primary font-black text-[10px] uppercase tracking-widest animate-pulse">Syncing Asset...</p>
+                  </div>
+               </div>
+             )}
+             
+             {isAdmin && !isUploading && (
+               <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-500 flex flex-col items-center justify-center gap-4 backdrop-blur-md z-10">
+                  <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="cursor-pointer bg-brand-primary text-black px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-3 hover:scale-110 shadow-[0_0_40px_rgba(0,255,156,0.5)] transition-all active:scale-95"
+                  >
                     <PenTool className="w-4 h-4" />
                     REPLACE PORTRAIT
-                    <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
-                  </label>
-                  <p className="text-white/80 text-[9px] font-bold uppercase tracking-[0.3em] bg-black/40 px-3 py-1 rounded-full backdrop-blur-md">Update Professional Identity</p>
+                  </button>
+                  <input 
+                    type="file" 
+                    ref={fileInputRef}
+                    className="hidden" 
+                    accept="image/*" 
+                    onChange={handleImageChange} 
+                  />
+                  <Link 
+                    to="/admin" 
+                    className="bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest border border-white/10 transition-all flex items-center gap-2"
+                  >
+                    <Settings className="w-3 h-3" /> MANAGE CONTENT
+                  </Link>
+                  <p className="text-white/40 text-[8px] font-bold uppercase tracking-[0.4em] mt-2">Elite Command Overlay</p>
                </div>
              )}
           </div>
           <div className="absolute -bottom-10 -right-4 glass p-10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-brand-primary/20 backdrop-blur-3xl group">
-            <p className="text-brand-primary font-black text-6xl mb-1 drop-shadow-[0_0_15px_rgba(0,255,156,0.3)] group-hover:scale-110 transition-transform">5+</p>
+            <p className="text-brand-primary font-black text-6xl mb-1 drop-shadow-[0_0_15px_rgba(0,255,156,0.3)] group-hover:scale-110 transition-transform">{content.about.experienceYears}</p>
             <p className="text-gray-400 text-[10px] font-black uppercase tracking-[0.25em] leading-relaxed italic">Years of Surgical<br />Digital Growth</p>
           </div>
         </motion.div>
@@ -62,22 +100,14 @@ export function About() {
         >
           <span className="text-brand-primary font-black uppercase tracking-[0.5em] text-xs mb-8 block drop-shadow-[0_0_10px_rgba(0,255,156,0.3)]">The Specialist Identity</span>
           <h2 className="text-4xl md:text-6xl font-black mb-10 leading-[1.1] tracking-tighter uppercase text-white">
-            I am <span className="text-gradient font-black">Imran Khan</span>, <br />
-            <span className="text-gradient font-black">Digital Marketing Expert</span> — <br />
+            I am <span className="text-gradient font-black">{content.about.name}</span>, <br />
+            <span className="text-gradient font-black">{content.about.role}</span> — <br />
             <span className="text-brand-primary">Grow Your Business</span>
           </h2>
-          <div className="space-y-8 text-gray-400 text-lg leading-relaxed">
+          <div className="space-y-8 text-gray-400 text-lg leading-relaxed whitespace-pre-line">
             <p className="font-light italic">
-              I am a results-driven <span className="text-brand-primary font-black uppercase tracking-widest text-sm">Digital Marketing Expert</span> specializing in social media growth, paid advertising, SEO, and content strategy. I help brands build a strong online presence, increase engagement, and convert audiences into loyal customers.
+              {content.about.bio}
             </p>
-            <p className="font-light">
-              My approach focuses on data-driven strategies, creative execution, and measurable growth. Whether it’s scaling social media, running high-converting ad campaigns, or optimizing content, I deliver solutions that drive real business results.
-            </p>
-            <div className="bg-white/[0.03] border-l-4 border-brand-primary/50 p-8 rounded-r-3xl shadow-xl backdrop-blur-sm">
-              <p className="italic text-gray-300 leading-relaxed font-medium">
-                "My core mission is to weaponize your digital footprint—transforming passive audiences into high-velocity revenue channels through surgical precision and elite brand authority."
-              </p>
-            </div>
           </div>
 
           <div className="mt-14 grid grid-cols-1 sm:grid-cols-2 gap-8">
@@ -102,7 +132,7 @@ export function About() {
 }
 
 export function Services() {
-  const { setContactModalOpen } = useContent();
+  const { content, setContactModalOpen } = useContent();
   const [activeSkill, setActiveSkill] = useState<number | null>(null);
 
   const services = [
@@ -182,9 +212,9 @@ export function Services() {
       </div>
 
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-        {services.map((service, index) => (
+        {content.services.map((service, index) => (
           <motion.div
-             key={service.title}
+             key={service.id}
              initial={{ opacity: 0, y: 30 }}
              whileInView={{ opacity: 1, y: 0 }}
              viewport={{ once: true }}
@@ -192,12 +222,12 @@ export function Services() {
              onClick={() => setActiveSkill(activeSkill === index ? null : index)}
              className={`p-10 rounded-[3rem] glass cursor-pointer group transition-all duration-500 ${activeSkill === index ? 'ring-2 ring-brand-primary/40 bg-white/[0.08] shadow-[0_40px_80px_rgba(0,0,0,0.5)]' : 'hover:bg-white/[0.04] hover:shadow-2xl'}`}
           >
-            <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${service.color} p-4 mb-10 shadow-[0_10px_30px_rgba(0,0,0,0.3)] group-hover:scale-110 group-hover:rotate-6 transition-all duration-700`}>
-              <service.icon className="w-full h-full text-white" />
+            <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-primary to-brand-secondary p-4 mb-10 shadow-[0_10px_30px_rgba(0,0,0,0.3)] group-hover:scale-110 group-hover:rotate-6 transition-all duration-700`}>
+              <Zap className="w-full h-full text-white" />
             </div>
             <h3 className="text-2xl font-black mb-4 group-hover:text-brand-primary transition-colors tracking-tighter italic uppercase">{service.title}</h3>
             <p className="text-gray-400 text-sm leading-relaxed mb-8 font-light">
-              {service.desc}
+              {service.description}
             </p>
             
             <div className="flex flex-col gap-3">
@@ -211,35 +241,6 @@ export function Services() {
                 <Zap className="w-3.5 h-3.5 animate-pulse" />
                 INITIATE GROWTH
               </button>
-            </div>
-
-            <AnimatePresence>
-              {activeSkill === index && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="overflow-hidden"
-                >
-                  <p className="text-gray-300 text-[13px] font-light pt-8 border-t border-white/10 mt-8 leading-relaxed mb-6 italic uppercase tracking-wider">
-                    {service.fullDesc}
-                  </p>
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setContactModalOpen(true);
-                    }}
-                    className="w-full flex items-center justify-center gap-3 glass text-brand-primary py-4 rounded-xl text-[10px] font-black hover:bg-brand-primary/10 transition-all border-brand-primary/20 uppercase tracking-widest"
-                  >
-                    GET STRATEGIC AUDIT
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            <div className="mt-8 pt-6 border-t border-white/5 flex items-center justify-between opacity-50 group-hover:opacity-100 transition-opacity">
-               <span className="text-[9px] font-black uppercase tracking-[0.3em] text-gray-500">{activeSkill === index ? 'MINIMIZE INTEL' : 'EXPAND STRATEGY'}</span>
-               <ChevronDown className={`w-3 h-3 text-brand-primary transition-transform duration-500 ${activeSkill === index ? 'rotate-180' : ''}`} />
             </div>
           </motion.div>
         ))}

@@ -17,27 +17,65 @@ async function startServer() {
   app.use(express.json({ limit: '50mb' }));
   app.use(cookieParser());
 
+  const defaultContent = {
+    hero: {
+      badge: "GLOBAL GROWTH ARCHITECTURE",
+      headline: "GROW YOUR BUSINESS WITH\nSMART DIGITAL\nMARKETING",
+      subheadline: "Helping Brands Scale Traffic, Engagement & Revenue With Data-Driven Strategies Focused on Performance.",
+    },
+    about: {
+      profileImage: "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=800",
+      name: "Imran Khan",
+      role: "Marketing Expert",
+      bio: "Visionary growth architect specializing in digital acquisition and conversion optimization.",
+      experienceYears: "5+",
+    },
+    services: [
+      { id: '1', title: 'SEO Optimization', description: 'Dominating search results with precision algorithms.' },
+      { id: '2', title: 'Data Analytics', description: 'Turning raw data into profitable business decisions.' },
+      { id: '3', title: 'PPC Management', description: 'High-converting ad campaigns that maximize ROI.' }
+    ],
+    portfolio: [
+      { id: '1', title: 'E-commerce Scale', category: 'Growth Strategy', image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80' },
+      { id: '2', title: 'SaaS Acquisition', category: 'Digital Marketing', image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80' }
+    ],
+    pricing: {
+      basic: "30",
+      standard: "55",
+      premium: "110",
+    },
+    coverBanner: {
+      headline: "Scale Your\nEmpire",
+      subheadline: "\"We don't just run ads; we engineer market dominance through data-driven precision and aggressive scaling strategies.\"",
+      image: "https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&q=80&w=2400",
+    },
+    contact: {
+      email: "h.malimran46@gmail.com",
+      whatsapp: "01986620247",
+    },
+    messages: []
+  };
+
   // Initialize content file if not exists
   try {
     await fs.access(CONTENT_FILE);
-  } catch {
-    const defaultContent = {
-      hero: {
-        headline: "Grow Your Business With\nSmart Digital Marketing",
-        subheadline: "Helping Brands Scale Traffic, Engagement & Revenue With Data-Driven Strategies Focused on Performance.",
-      },
-      pricing: {
-        basic: "30",
-        standard: "55",
-        premium: "110",
-      },
-      about: {
-        profileImage: "input_file_2.png",
-        name: "Imran Khan",
-        role: "Marketing Expert",
-      },
-      messages: []
+    // Migration: ensure all fields exist if file already exists
+    const data = await fs.readFile(CONTENT_FILE, "utf-8");
+    const existing = JSON.parse(data);
+    const merged = {
+      ...defaultContent,
+      ...existing,
+      hero: { ...defaultContent.hero, ...existing.hero },
+      about: { ...defaultContent.about, ...existing.about },
+      pricing: { ...defaultContent.pricing, ...existing.pricing },
+      coverBanner: { ...defaultContent.coverBanner, ...(existing.coverBanner || {}) },
+      contact: { ...defaultContent.contact, ...existing.contact },
+      services: existing.services || defaultContent.services,
+      portfolio: existing.portfolio || defaultContent.portfolio,
+      messages: existing.messages || defaultContent.messages,
     };
+    await fs.writeFile(CONTENT_FILE, JSON.stringify(merged, null, 2));
+  } catch {
     await fs.writeFile(CONTENT_FILE, JSON.stringify(defaultContent, null, 2));
   }
 

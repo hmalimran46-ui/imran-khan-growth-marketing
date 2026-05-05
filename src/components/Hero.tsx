@@ -1,7 +1,8 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowRight, MessageCircle, ChevronLeft, ChevronRight, BarChart3, Megaphone, Monitor, Smartphone, Share2, Zap } from 'lucide-react';
-import React, { useState, useEffect } from 'react';
+import { ArrowRight, MessageCircle, ChevronLeft, ChevronRight, BarChart3, Megaphone, Monitor, Smartphone, Share2, Zap, PenTool, Settings, Loader2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useContent } from '../context/ContentContext';
+import { Link } from 'react-router-dom';
 
 interface FloatingIconProps {
   key?: React.Key;
@@ -171,7 +172,7 @@ export function Hero() {
             <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full border border-brand-primary/20 bg-brand-primary/5 backdrop-blur-3xl shadow-[0_0_40px_rgba(0,255,156,0.1)] group">
               <span className="w-2 h-2 rounded-full bg-brand-primary animate-pulse shadow-[0_0_10px_rgba(0,255,156,1)]" />
               <span className="text-brand-primary text-[10px] font-black uppercase tracking-[0.5em] group-hover:tracking-[0.6em] transition-all duration-500">
-                GLOBAL GROWTH ARCHITECTURE
+                {content.hero.badge}
               </span>
             </div>
           </motion.div>
@@ -180,11 +181,9 @@ export function Hero() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.4, duration: 1, ease: [0.22, 1, 0.36, 1] }}
-            className="text-4xl md:text-7xl lg:text-[5.5rem] font-black mb-12 leading-[1.05] tracking-tighter text-white max-w-6xl mx-auto font-display drop-shadow-[0_20px_50px_rgba(0,0,0,1)] uppercase italic group"
+            className="text-4xl md:text-7xl lg:text-[5.5rem] font-black mb-12 leading-[1.05] tracking-tighter text-white max-w-6xl mx-auto font-display drop-shadow-[0_20px_50px_rgba(0,0,0,1)] uppercase italic group whitespace-pre-line"
           >
-            GROW YOUR BUSINESS WITH <br />
-            <span className="text-brand-primary italic drop-shadow-[0_0_30px_rgba(0,255,156,0.3)]">SMART DIGITAL</span> <br />
-            MARKETING
+            {content.hero.headline}
           </motion.h1>
           
           <motion.div
@@ -196,7 +195,7 @@ export function Hero() {
             <div className="absolute inset-0 bg-brand-primary/5 blur-[100px] -z-10" />
             <div className="glass bg-[#000810]/40 py-10 px-14 rounded-[3rem] border border-white/5 shadow-2xl backdrop-blur-xl">
               <p className="text-gray-400 text-lg md:text-2xl leading-relaxed font-light tracking-wide italic">
-                Helping Brands Scale <span className="text-white font-bold">Traffic</span>, <span className="text-white font-bold">Engagement</span> & <span className="text-brand-primary font-black">Revenue</span> With Data-Driven Strategies Focused on Performance.
+                {content.hero.subheadline}
               </p>
             </div>
           </motion.div>
@@ -250,7 +249,31 @@ export function Hero() {
 }
 
 export function CoverBanner() {
-  const { setContactModalOpen } = useContent();
+  const { content, updateContent, isAdmin, setContactModalOpen } = useContent();
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        alert("Strategic Asset too large. Please limit to 2MB.");
+        return;
+      }
+      setIsUploading(true);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        updateContent({ coverBanner: { ...content.coverBanner, image: reader.result as string } })
+          .finally(() => setIsUploading(false));
+      };
+      reader.onerror = () => {
+        console.error("FileReader failed");
+        setIsUploading(false);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   return (
     <section className="px-6 py-12 relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none -z-10">
@@ -273,12 +296,40 @@ export function CoverBanner() {
       >
         <div className="absolute inset-0 w-full h-full">
           <img 
-            src="https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&q=80&w=2400" 
-            alt="Marketing Technology" 
-            className="w-full h-full object-cover transition-transform duration-[3000ms] group-hover:scale-105 opacity-30 mix-blend-overlay"
+            src={content.coverBanner.image} 
+            alt="Marketing Technology Ecosystem" 
+            className={`w-full h-full object-cover transition-transform duration-[3000ms] group-hover:scale-105 opacity-30 mix-blend-overlay ${isUploading ? 'blur-md' : ''}`}
             referrerPolicy="no-referrer"
           />
         </div>
+
+        {isUploading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm z-20">
+             <div className="flex flex-col items-center gap-4">
+               <Loader2 className="w-10 h-10 text-brand-primary animate-spin" />
+               <p className="text-brand-primary font-black text-[10px] uppercase tracking-widest animate-pulse">Reconfiguring Environment...</p>
+             </div>
+          </div>
+        )}
+
+        {isAdmin && !isUploading && (
+          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-500 flex flex-col items-center justify-center gap-4 backdrop-blur-md z-20">
+             <button 
+               onClick={() => fileInputRef.current?.click()}
+               className="bg-brand-primary text-black px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-3 hover:scale-110 shadow-[0_0_40px_rgba(0,255,156,0.5)] transition-all"
+             >
+               <PenTool className="w-4 h-4" />
+               SWAP BANNER
+             </button>
+             <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageChange} />
+             <Link 
+               to="/admin" 
+               className="bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-xl font-black text-[9px] uppercase tracking-widest border border-white/10 transition-all flex items-center gap-2"
+             >
+               <Settings className="w-3 h-3" /> COMMAND CENTER
+             </Link>
+          </div>
+        )}
         <div className="absolute inset-0 bg-gradient-to-r from-[#00040a] via-[#00040a]/80 to-transparent" />
         
         <div className="relative z-10 p-10 md:p-24 flex flex-col justify-center max-w-3xl">
@@ -290,12 +341,12 @@ export function CoverBanner() {
            >
              Surgical Growth Architecture
            </motion.span>
-           <h2 className="text-4xl md:text-7xl font-black text-white mb-8 tracking-tighter uppercase italic leading-[1] drop-shadow-2xl">
-             Scale Your <br /><span className="text-gradient">Empire</span>
+           <h2 className="text-4xl md:text-7xl font-black text-white mb-8 tracking-tighter uppercase italic leading-[1] drop-shadow-2xl whitespace-pre-line">
+             {content.coverBanner.headline}
            </h2>
-           <p className="text-gray-400 text-lg md:text-xl font-light leading-relaxed mb-12 max-w-xl italic border-l-2 border-brand-primary/30 pl-8">
-             "We don't just run ads; we engineer market dominance through data-driven precision and aggressive scaling strategies."
-           </p>
+           <div className="text-gray-400 text-lg md:text-xl font-light leading-relaxed mb-12 max-w-xl italic border-l-2 border-brand-primary/30 pl-8">
+             {content.coverBanner.subheadline}
+           </div>
            <button 
              onClick={() => setContactModalOpen(true)}
              className="w-fit bg-brand-primary text-black px-12 py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] hover:scale-110 active:scale-95 transition-all shadow-[0_20px_50px_rgba(0,255,156,0.3)]"

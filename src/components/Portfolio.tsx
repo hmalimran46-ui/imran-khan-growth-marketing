@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useContent } from '../context/ContentContext';
 
 export function Portfolio() {
+  const { content } = useContent();
   const [filter, setFilter] = useState('All');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [displayCount, setDisplayCount] = useState(6);
@@ -22,7 +23,7 @@ export function Portfolio() {
     { title: "Elite Display Banner Set", category: "Banners", img: "https://images.unsplash.com/photo-1626785774573-4b799315345d?auto=format&fit=crop&q=80&w=800" }
   ];
 
-  const filteredItems = allItems.filter(item => filter === 'All' || item.category === filter);
+  const filteredItems = content.portfolio.filter(item => filter === 'All' || item.category === filter);
   const itemsToShow = filteredItems.slice(0, displayCount);
 
   return (
@@ -53,16 +54,16 @@ export function Portfolio() {
           {itemsToShow.map((item, index) => (
             <motion.div
               layout
-              key={item.title}
+              key={item.id}
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ duration: 0.4, delay: index * 0.05 }}
               className="group relative rounded-3xl overflow-hidden aspect-[4/5] glass border-white/5 cursor-pointer"
-              onClick={() => setSelectedImage(item.img)}
+              onClick={() => setSelectedImage(item.image)}
             >
               <img
-                 src={item.img}
+                 src={item.image}
                  alt={item.title}
                  className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110 group-hover:rotate-1"
                  referrerPolicy="no-referrer"
