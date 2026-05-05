@@ -53,6 +53,7 @@ export function AdminPanel() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     try {
       const res = await fetch('/api/login', {
         method: 'POST',
@@ -67,7 +68,8 @@ export function AdminPanel() {
         setError(data.error || 'Identity Rejected.');
       }
     } catch (err) {
-      setError('Connection failure. Check identity protocols.');
+      console.error("Login failed:", err);
+      setError('Connection failure. Protocol check required.');
     }
   };
 
