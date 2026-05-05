@@ -56,6 +56,13 @@ interface ContentState {
     email: string;
     whatsapp: string;
   };
+  offers: {
+    isActive: boolean;
+    title: string;
+    description: string;
+    discountCode: string;
+    badge: string;
+  };
   messages: Message[];
 }
 
@@ -94,6 +101,13 @@ const defaultContent: ContentState = {
   contact: {
     email: "h.malimran46@gmail.com",
     whatsapp: "01986620247",
+  },
+  offers: {
+    isActive: true,
+    title: "SPECIAL SERVICE DISCOUNT",
+    description: "Get 20% off on all professional digital solutions for a limited time.",
+    discountCode: "IMRAN20",
+    badge: "Active Offer"
   },
   messages: []
 };
@@ -136,6 +150,7 @@ export function ContentProvider({ children }: { children: React.ReactNode }) {
             pricing: { ...(prev?.pricing || defaultContent.pricing), ...(data.pricing || {}) },
             coverBanner: { ...(prev?.coverBanner || defaultContent.coverBanner), ...(data.coverBanner || {}) },
             contact: { ...(prev?.contact || defaultContent.contact), ...(data.contact || {}) },
+            offers: { ...(prev?.offers || defaultContent.offers), ...(data.offers || {}) },
             services: data.services || prev?.services || defaultContent.services,
             portfolio: data.portfolio || prev?.portfolio || defaultContent.portfolio,
             messages: data.messages || prev?.messages || defaultContent.messages,

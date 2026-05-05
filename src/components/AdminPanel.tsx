@@ -3,7 +3,7 @@ import { useContent } from '../context/ContentContext';
 import { 
   Layout, Save, LogOut, Image, DollarSign, Type, Settings, 
   ChevronRight, X, MessageSquare, Mail, User, Clock, Trash2, 
-  Briefcase, Plus, Edit2, Globe, MessageCircle, Loader2, Upload, Link as LinkIcon
+  Briefcase, Plus, Edit2, Globe, MessageCircle, Loader2, Upload, Link as LinkIcon, Tag
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
@@ -14,7 +14,7 @@ export function AdminPanel() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'hero' | 'about' | 'services' | 'portfolio' | 'pricing' | 'contact' | 'inbox' | 'banner'>('hero');
+  const [activeTab, setActiveTab] = useState<'hero' | 'about' | 'services' | 'portfolio' | 'pricing' | 'contact' | 'inbox' | 'banner' | 'offers'>('hero');
   const [localContent, setLocalContent] = useState(content);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -64,10 +64,10 @@ export function AdminPanel() {
         setError('');
       } else {
         const data = await res.json();
-        setError(data.error || 'Invalid credentials');
+        setError(data.error || 'Identity Rejected.');
       }
     } catch (err) {
-      setError('Strategic connection failed');
+      setError('Connection failure. Check identity protocols.');
     }
   };
 
@@ -204,11 +204,22 @@ export function AdminPanel() {
                 {tab}
               </div>
               {tab === 'inbox' && content.messages.length > 0 && (
-                <span className="bg-red-500 text-white text-[8px] px-1.5 py-0.5 rounded-full">{content.messages.length}</span>
-              )}
-            </button>
-          ))}
-        </nav>
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] px-1.5 py-0.5 rounded-full animate-pulse">{content.messages.length}</span>
+            )}
+          </button>
+        ))}
+        {/* New Offers Tab Button */}
+        <button 
+          onClick={() => setActiveTab('offers')}
+          className={`flex-1 md:flex-none px-6 py-4 rounded-2xl flex items-center justify-between gap-4 transition-all duration-300 relative group
+            ${activeTab === 'offers' ? 'bg-brand-primary text-black' : 'hover:bg-white/5 text-gray-500'}`}
+        >
+          <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest italic group-hover:translate-x-1 transition-transform">
+            <Tag className="w-4 h-4" />
+            OFFERS
+          </div>
+        </button>
+      </nav>
 
         <div className="p-6 mt-auto border-t border-white/5 space-y-4">
           <button 
@@ -692,6 +703,68 @@ export function AdminPanel() {
                     </motion.div>
                   ))
                 )}
+              </div>
+            )}
+
+            {activeTab === 'offers' && (
+              <div className="space-y-8">
+                <div className="glass p-8 rounded-[2rem] border-white/5 space-y-8">
+                  <div className="flex items-center justify-between border-b border-white/5 pb-4">
+                    <div>
+                      <h3 className="text-xl font-black text-white uppercase tracking-tighter">Strategic Campaigns</h3>
+                      <p className="text-[10px] font-black text-gray-600 uppercase tracking-widest mt-1">Control active market incentives.</p>
+                    </div>
+                    <button 
+                      onClick={() => setLocalContent({...localContent, offers: {...localContent.offers, isActive: !localContent.offers.isActive}})}
+                      className={`px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all
+                        ${localContent.offers.isActive ? 'bg-brand-primary/20 text-brand-primary border border-brand-primary/30' : 'bg-red-500/20 text-red-500 border border-red-500/30'}`}
+                    >
+                      {localContent.offers.isActive ? 'CAMPAIGN ACTIVE' : 'CAMPAIGN INACTIVE'}
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-6">
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Campaign Badge</label>
+                        <input 
+                          value={localContent.offers.badge}
+                          onChange={e => setLocalContent({...localContent, offers: {...localContent.offers, badge: e.target.value}})}
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-6 py-4 outline-none focus:border-brand-primary text-white font-light"
+                        />
+                      </div>
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Offer Title</label>
+                        <input 
+                          value={localContent.offers.title}
+                          onChange={e => setLocalContent({...localContent, offers: {...localContent.offers, title: e.target.value}})}
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-6 py-4 outline-none focus:border-brand-primary text-white font-black text-xl uppercase italic"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-6">
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Discount/Promo Code</label>
+                        <input 
+                          value={localContent.offers.discountCode}
+                          onChange={e => setLocalContent({...localContent, offers: {...localContent.offers, discountCode: e.target.value}})}
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-6 py-4 outline-none focus:border-brand-primary text-white font-mono tracking-widest text-lg uppercase"
+                        />
+                      </div>
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Detailed Description</label>
+                        <textarea 
+                          value={localContent.offers.description}
+                          onChange={e => setLocalContent({...localContent, offers: {...localContent.offers, description: e.target.value}})}
+                          rows={4}
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-6 py-4 outline-none focus:border-brand-primary text-white font-light leading-relaxed"
+                          placeholder="Describe the tactical advantage of this offer..."
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </div>

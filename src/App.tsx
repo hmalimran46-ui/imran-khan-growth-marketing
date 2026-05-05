@@ -2,6 +2,7 @@ import Navbar from './components/Navbar';
 import { Hero, CoverBanner, ExpertiseSlider, AdvancedSkills } from './components/Hero';
 import { About, Services } from './components/Services';
 import { Portfolio, Pricing } from './components/Portfolio';
+import { SpecialOffers } from './components/SpecialOffers';
 import { Contact, Footer, ContactModal, FloatingWhatsApp } from './components/Contact';
 import { OrderTracker } from './components/OrderTracker';
 import { AdminPanel } from './components/AdminPanel';
@@ -15,6 +16,7 @@ function MainSite() {
     <div className="min-h-screen relative overflow-x-hidden bg-[#00040a]">
       <Navbar onOpenTracker={() => setIsTrackerOpen(true)} />
       <Hero />
+      <SpecialOffers />
       <CoverBanner />
       <ExpertiseSlider />
       <AdvancedSkills />
