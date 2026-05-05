@@ -104,12 +104,13 @@ async function startServer() {
         httpOnly: true, 
         secure: true,
         sameSite: 'none',
+        path: '/',
         maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
       });
       res.json({ success: true });
     } else {
-      console.warn(`[Auth] Failed login attempt for: ${email}`);
-      res.status(401).json({ error: "Invalid identity or access protocol." });
+      console.warn(`[Auth] Failed login attempt for identity confirmation.`);
+      res.status(401).json({ error: "Identity Rejected. Incorrect Credentials." });
     }
   });
 
