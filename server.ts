@@ -62,6 +62,8 @@ const defaultContent = {
   messages: []
 };
 
+let memoryContent = { ...defaultContent };
+
 // Initialize content file logic - made non-blocking for Vercel
 function initializeContent() {
   fs.access(CONTENT_FILE)
@@ -82,8 +84,9 @@ function initializeContent() {
           portfolio: existing.portfolio || defaultContent.portfolio,
           messages: existing.messages || defaultContent.messages,
         };
+        memoryContent = merged;
         // Only attempt write if environment might allow it
-        if (process.env.NODE_ENV !== 'production') {
+        if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
           await fs.writeFile(CONTENT_FILE, JSON.stringify(merged, null, 2));
         }
       } catch (e) {
@@ -104,6 +107,12 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "operational", timestamp: Date.now() });
 });
 
+// Check Auth Status
+app.get("/api/auth-status", (req, res) => {
+  const session = req.cookies.admin_session;
+  res.json({ isAdmin: session === "true" });
+});
+
 // Login
 app.post("/api/login", (req, res) => {
   const { email, password } = req.body;
@@ -111,12 +120,13 @@ app.post("/api/login", (req, res) => {
   const adminPassword = process.env.ADMIN_PASSWORD || "Hm4648@#";
 
   if (email === adminEmail && password === adminPassword) {
+    // Setting set-cookie header with 30 days expiration
     res.cookie("admin_session", "true", { 
       httpOnly: true, 
-      secure: true,
-      sameSite: 'none',
+      secure: true, // Required for most modern browsers
+      sameSite: 'none', // Critical for cross-domain/sub-domain environments
       path: '/',
-      maxAge: 30 * 24 * 60 * 60 * 1000 
+      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 Days Permanent Session
     });
     res.json({ success: true });
   } else {
@@ -141,21 +151,47 @@ app.get("/api/content", async (req, res) => {
     const data = await fs.readFile(CONTENT_FILE, "utf-8");
     res.json(JSON.parse(data));
   } catch (error) {
-    res.json(defaultContent); // Fallback to memory on read error
+    res.json(memoryContent); // Fallback to memory on read error
   }
 });
 
-// Update Content (Mocking persistence for Vercel since disk is RO)
+// Contact Message Submission (Public)
+app.post("/api/contact", async (req, res) => {
+  try {
+    const newMessage = req.body;
+    memoryContent.messages = [newMessage, ...memoryContent.messages];
+    
+    if (!process.env.VERCEL) {
+      await fs.writeFile(CONTENT_FILE, JSON.stringify(memoryContent, null, 2));
+    }
+    res.json({ success: true, orderId: newMessage.orderId });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to process mission request." });
+  }
+});
+
+// Update Content (Admin Only)
 app.post("/api/content", async (req, res) => {
   const session = req.cookies.admin_session;
   if (session !== "true") return res.status(401).json({ error: "Unauthorized" });
 
   try {
     const newContent = req.body;
-    await fs.writeFile(CONTENT_FILE, JSON.stringify(newContent, null, 2));
+    memoryContent = newContent;
+    
+    // Only attempt write if NOT on Vercel
+    if (!process.env.VERCEL) {
+      await fs.writeFile(CONTENT_FILE, JSON.stringify(newContent, null, 2));
+    }
+    
     res.json({ success: true });
   } catch (error) {
-    res.status(500).json({ error: "Operation failed" });
+    // If write fails but on Vercel, it's expected, but we still updated memoryContent
+    if (process.env.VERCEL) {
+        res.json({ success: true, note: "Memory sync only" });
+    } else {
+        res.status(500).json({ error: "Operation failed" });
+    }
   }
 });
 

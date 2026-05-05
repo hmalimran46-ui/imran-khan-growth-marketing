@@ -81,39 +81,70 @@ export function OrderTracker({ isOpen, onClose }: { isOpen: boolean, onClose: ()
                 </div>
               </div>
 
-              <div className="flex justify-between relative px-2">
-                <div className="absolute top-1/2 left-0 w-full h-[1px] bg-white/5 -translate-y-1/2 -z-10" />
+              <div className="flex justify-between relative px-2 mb-4">
+                <div className="absolute top-1/2 left-0 w-full h-[2px] bg-white/5 -translate-y-1/2 -z-10" />
+                <motion.div 
+                  className="absolute top-1/2 left-0 h-[2px] bg-brand-primary -translate-y-1/2 -z-10 origin-left transition-all duration-500"
+                  initial={{ scaleX: 0 }}
+                  animate={{ 
+                    scaleX: result.status === 'pending' ? 0.125 : 
+                            result.status === 'approved' ? 0.375 : 
+                            result.status === 'in_progress' ? 0.625 : 
+                            result.status === 'delivered' ? 1 : 0 
+                  }}
+                />
                 {[
-                  { step: 'pending', icon: Clock },
-                  { step: 'approved', icon: CheckCircle },
-                  { step: 'in_progress', icon: Package },
-                  { step: 'delivered', icon: Truck }
+                  { step: 'pending', icon: Clock, label: 'Pending', desc: 'Awaiting Review' },
+                  { step: 'approved', icon: CheckCircle, label: 'Approved', desc: 'Ops Initialized' },
+                  { step: 'in_progress', icon: Package, label: 'Active', desc: 'Strategy Deployment' },
+                  { step: 'delivered', icon: Truck, label: 'Completed', desc: 'Mission Success' }
                 ].map((item, i, arr) => {
                   const states = arr.map(a => a.step);
-                  const currentIndex = states.indexOf(result.status);
+                  const currentIndex = states.indexOf(result.status === 'rejected' ? 'pending' : result.status);
                   const isPast = currentIndex >= i;
-                  const isCurrent = result.status === item.step;
+                  const isCurrent = (result.status === 'rejected' && i === 0) || result.status === item.step;
+                  const isRejected = result.status === 'rejected' && i === 0;
 
                   return (
-                    <div key={item.step} className="flex flex-col items-center gap-3">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-500 shadow-xl
-                        ${isPast ? 'bg-brand-primary text-black' : 'bg-white/5 text-gray-700'}
-                        ${isCurrent ? 'animate-pulse scale-110 shadow-[0_0_20px_rgba(0,255,156,0.3)]' : ''}`}
+                    <div key={item.step} className="flex flex-col items-center gap-3 relative">
+                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-700 shadow-2xl relative
+                        ${isPast ? (isRejected ? 'bg-red-500 text-white' : 'bg-brand-primary text-black') : 'bg-white/5 text-gray-700'}
+                        ${isCurrent ? 'scale-110 shadow-[0_0_30px_rgba(0,255,156,0.4)]' : ''}`}
                       >
-                        <item.icon className="w-5 h-5" />
+                        {isRejected && i === 0 ? <AlertCircle className="w-6 h-6" /> : <item.icon className="w-6 h-6" />}
+                        {isCurrent && (
+                          <motion.div 
+                            layoutId="active-indicator"
+                            className="absolute -inset-1 border-2 border-brand-primary rounded-[1.2rem] animate-pulse" 
+                          />
+                        )}
                       </div>
-                      <span className={`text-[8px] font-black uppercase tracking-widest ${isPast ? 'text-white' : 'text-gray-700'}`}>
-                        {item.step.split('_')[0]}
-                      </span>
+                      <div className="flex flex-col items-center">
+                        <span className={`text-[9px] font-black uppercase tracking-widest ${isPast ? (isRejected ? 'text-red-500' : 'text-white') : 'text-gray-700'}`}>
+                          {isRejected && i === 0 ? 'REJECTED' : item.label}
+                        </span>
+                        <span className="text-[7px] font-bold text-gray-600 uppercase tracking-tighter whitespace-nowrap mt-1">
+                          {item.desc}
+                        </span>
+                      </div>
                     </div>
                   );
                 })}
               </div>
 
-              <div className="bg-brand-primary/5 rounded-2xl p-6 border border-brand-primary/10">
-                <p className="text-[10px] font-black text-brand-primary uppercase tracking-widest mb-2 italic underline decoration-brand-primary/30">Intelligence Note:</p>
+              <div className={`rounded-3xl p-8 border transition-all duration-500 ${result.status === 'rejected' ? 'bg-red-500/5 border-red-500/20' : 'bg-brand-primary/5 border-brand-primary/10'}`}>
+                <div className="flex items-center gap-2 mb-4">
+                  <div className={`w-2 h-2 rounded-full animate-pulse ${result.status === 'rejected' ? 'bg-red-500' : 'bg-brand-primary'}`} />
+                  <p className={`text-[10px] font-black uppercase tracking-widest italic ${result.status === 'rejected' ? 'text-red-500' : 'text-brand-primary'}`}>
+                    Operational Broadcast:
+                  </p>
+                </div>
                 <p className="text-gray-400 text-sm font-light italic leading-relaxed">
-                  "Your project is currently in the <span className="text-white font-bold">{result.status.replace('_', ' ')}</span> phase. Our teams are maintaining peak operational efficiency to ensure delivery within the set timeline."
+                  {result.status === 'pending' && "Requirement validation stage active. Strategic response pending reviewer authorization."}
+                  {result.status === 'approved' && "Verification complete. Mission assets are being provisioned for deployment."}
+                  {result.status === 'in_progress' && "Tactical execution initialized. Real-time monitoring systems are analyzing growth vectors."}
+                  {result.status === 'delivered' && "Objective achieved. All strategic assets have been successfully transferred."}
+                  {result.status === 'rejected' && "Request protocols rejected. Intelligence audit detected non-viable engagement parameters."}
                 </p>
               </div>
             </motion.div>

@@ -3,7 +3,7 @@ import { useContent } from '../context/ContentContext';
 import { 
   Layout, Save, LogOut, Image, DollarSign, Type, Settings, 
   ChevronRight, X, MessageSquare, Mail, User, Clock, Trash2, 
-  Briefcase, Plus, Edit2, Globe, MessageCircle, Loader2, Upload, Link as LinkIcon, Tag
+  Briefcase, Plus, Edit2, Globe, MessageCircle, Loader2, Upload, Link as LinkIcon, Tag, Package
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
@@ -23,6 +23,18 @@ export function AdminPanel() {
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
 
   React.useEffect(() => {
+    const initializeAuth = async () => {
+      try {
+        const res = await fetch('/api/auth-status');
+        const data = await res.json();
+        if (data.isAdmin) {
+          setIsAdmin(true);
+        }
+      } catch (e) {
+        console.error("Auth status verification failed.");
+      }
+    };
+    
     const checkConnection = async () => {
       try {
         const res = await fetch('/api/health');
@@ -31,8 +43,10 @@ export function AdminPanel() {
         console.error("Mission Control unreachable:", e);
       }
     };
+
+    initializeAuth();
     checkConnection();
-  }, []);
+  }, [setIsAdmin]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, target: 'about' | 'banner') => {
     const file = e.target.files?.[0];
@@ -71,6 +85,7 @@ export function AdminPanel() {
       const res = await fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email, password })
       });
       
@@ -91,7 +106,10 @@ export function AdminPanel() {
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/logout', { method: 'POST' });
+      await fetch('/api/logout', { 
+        method: 'POST',
+        credentials: 'include'
+      });
       setIsAdmin(false);
     } catch (err) {
       console.error("Logout failed");
@@ -641,7 +659,7 @@ export function AdminPanel() {
                 {localContent.messages.length === 0 ? (
                   <div className="glass p-20 rounded-[2.5rem] text-center border-2 border-dashed border-white/5">
                      <MessageSquare className="w-12 h-12 text-gray-800 mx-auto mb-6" />
-                     <p className="text-gray-600 font-black uppercase tracking-widest text-xs">Communication Array Clear</p>
+                     <p className="text-gray-600 font-black uppercase tracking-widest text-xs">Inbox Clear</p>
                   </div>
                 ) : (
                   localContent.messages.map(msg => (
@@ -653,14 +671,14 @@ export function AdminPanel() {
                     >
                       <div className="absolute top-0 right-0 w-1 h-full bg-brand-primary/20 opacity-0 group-hover:opacity-100 transition-opacity" />
                       
-                      <div className="flex items-center justify-between mb-8 border-b border-white/5 pb-4">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 border-b border-white/5 pb-6 gap-6">
                         <div className="flex items-center gap-4">
-                          <div className="bg-brand-primary/10 px-4 py-2 rounded-xl">
-                            <span className="text-[9px] font-black text-brand-primary uppercase tracking-[0.2em]">Order Identity</span>
+                          <div className="bg-brand-primary/10 px-4 py-2 rounded-xl border border-brand-primary/10">
+                            <span className="text-[9px] font-black text-brand-primary uppercase tracking-[0.2em]">Transaction ID</span>
                             <p className="text-sm font-mono font-black text-white">{msg.orderId}</p>
                           </div>
                           <div>
-                            <span className="text-[9px] font-black text-gray-600 uppercase tracking-[0.2em] block mb-1">Deployment Status</span>
+                            <span className="text-[9px] font-black text-gray-600 uppercase tracking-[0.2em] block mb-1">Status</span>
                             <div className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg inline-block
                               ${msg.status === 'pending' ? 'bg-yellow-500/20 text-yellow-500' : 
                                 msg.status === 'approved' ? 'bg-green-500/20 text-green-500' :
@@ -672,8 +690,8 @@ export function AdminPanel() {
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                           <label className="text-[9px] font-black text-gray-600 uppercase tracking-widest mr-2">Transition Logic:</label>
+                        <div className="flex flex-wrap items-center gap-2">
+                           <label className="text-[9px] font-black text-gray-600 uppercase tracking-widest mr-2">Management:</label>
                            {(['pending', 'approved', 'in_progress', 'delivered', 'rejected'] as const).map(s => (
                              <button
                                key={s}
@@ -696,6 +714,18 @@ export function AdminPanel() {
                                 <h3 className="text-3xl font-black text-white italic tracking-tighter uppercase">{msg.name}</h3>
                                 <p className="text-brand-primary font-black uppercase tracking-[0.3em] text-[10px] mt-1">{msg.email}</p>
                               </div>
+                              
+                              <div className="grid grid-cols-1 gap-4">
+                                <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                                  <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest block mb-2">Service Interest</span>
+                                  <p className="text-white text-xs font-bold uppercase">{msg.service || 'General Inquiry'}</p>
+                                </div>
+                                <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                                  <span className="text-[8px] font-black text-gray-600 uppercase tracking-widest block mb-2">Timeline/Budget</span>
+                                  <p className="text-white text-xs font-bold uppercase">{msg.budget || 'TBD'}</p>
+                                </div>
+                              </div>
+
                               <div className="flex items-center gap-2 text-gray-600">
                                  <Clock className="w-3 h-3" />
                                  <span className="text-[8px] font-black uppercase tracking-widest">{new Date(msg.timestamp).toLocaleString()}</span>
@@ -714,10 +744,16 @@ export function AdminPanel() {
                             </div>
                          </div>
                          <div className="md:w-2/3 border-l border-white/5 md:pl-10">
-                            <h4 className="text-lg font-black text-white mb-4 uppercase italic tracking-tight">{msg.subject}</h4>
-                            <p className="text-gray-400 text-lg font-light leading-relaxed max-w-2xl bg-white/[0.02] p-6 rounded-2xl border border-white/5">
-                              "{msg.text}"
-                            </p>
+                            <div className="mb-6">
+                              <span className="text-[10px] font-black text-brand-primary uppercase tracking-[0.4em] block mb-2">Subject Header</span>
+                              <h4 className="text-xl font-black text-white uppercase italic tracking-tight">{msg.subject}</h4>
+                            </div>
+                            <div>
+                               <span className="text-[10px] font-black text-brand-primary uppercase tracking-[0.4em] block mb-2">Detailed Communication</span>
+                               <p className="text-gray-400 text-lg font-light leading-relaxed max-w-2xl bg-white/[0.02] p-8 rounded-3xl border border-white/5 shadow-inner whitespace-pre-wrap">
+                                 "{msg.text}"
+                               </p>
+                            </div>
                          </div>
                       </div>
                     </motion.div>

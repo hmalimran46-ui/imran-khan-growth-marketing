@@ -11,6 +11,8 @@ export interface Message {
   text: string;
   status: MessageStatus;
   timestamp: string;
+  service?: string;
+  budget?: string;
 }
 
 interface ServiceItem {
@@ -135,8 +137,8 @@ export function ContentProvider({ children }: { children: React.ReactNode }) {
     const init = async () => {
       try {
         const [contentRes, authRes] = await Promise.all([
-          fetch('/api/content'),
-          fetch('/api/auth-status')
+          fetch('/api/content', { credentials: 'include' }),
+          fetch('/api/auth-status', { credentials: 'include' })
         ]);
         
         if (contentRes.ok) {
@@ -178,11 +180,12 @@ export function ContentProvider({ children }: { children: React.ReactNode }) {
       finalUpdated = { ...prev, ...newContent };
       return finalUpdated;
     });
-
+ 
     try {
       const res = await fetch('/api/content', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(finalUpdated)
       });
       if (!res.ok) throw new Error("Synchronization failure with strategic server.");
@@ -192,7 +195,7 @@ export function ContentProvider({ children }: { children: React.ReactNode }) {
       throw error;
     }
   };
-
+ 
   const addMessage = async (msg: Omit<Message, 'id' | 'timestamp' | 'status' | 'orderId'>): Promise<string> => {
     const orderId = `IK-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
     const newMessage: Message = {
@@ -206,12 +209,12 @@ export function ContentProvider({ children }: { children: React.ReactNode }) {
     // Update local state
     const updatedMessages = [newMessage, ...content.messages];
     setContent(prev => ({ ...prev, messages: updatedMessages }));
-
+ 
     try {
-      const res = await fetch('/api/content', {
+      const res = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...content, messages: updatedMessages })
+        body: JSON.stringify(newMessage)
       });
       if (!res.ok) throw new Error("Failed to sync message with server.");
       return orderId;
