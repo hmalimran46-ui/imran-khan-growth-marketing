@@ -53,6 +53,13 @@ async function startServer() {
       email: "h.malimran46@gmail.com",
       whatsapp: "01986620247",
     },
+    offers: {
+      isActive: true,
+      title: "SPECIAL SERVICE DISCOUNT",
+      description: "Get 20% off on all professional digital solutions for a limited time.",
+      discountCode: "IMRAN20",
+      badge: "Active Offer"
+    },
     messages: []
   };
 
@@ -70,6 +77,7 @@ async function startServer() {
       pricing: { ...defaultContent.pricing, ...existing.pricing },
       coverBanner: { ...defaultContent.coverBanner, ...(existing.coverBanner || {}) },
       contact: { ...defaultContent.contact, ...existing.contact },
+      offers: { ...defaultContent.offers, ...(existing.offers || {}) },
       services: existing.services || defaultContent.services,
       portfolio: existing.portfolio || defaultContent.portfolio,
       messages: existing.messages || defaultContent.messages,
@@ -178,17 +186,33 @@ async function startServer() {
   });
 
   // --- Vite / Production Serve ---
-  if (process.env.NODE_ENV !== "production") {
+  const isVercel = process.env.VERCEL === "1";
+  
+  if (process.env.NODE_ENV !== "production" && !isVercel) {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
+    // Robust path resolution for production/Vercel
+    const distPath = path.resolve(process.cwd(), "dist");
+    
+    // Serve static files with longer cache for performance
+    app.use(express.static(distPath, {
+      maxAge: '1d',
+      index: false
+    }));
+
+    // Explicitly handle index.html fallback
     app.get("*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
+      const indexPath = path.join(distPath, "index.html");
+      res.sendFile(indexPath, (err) => {
+        if (err) {
+          console.error("[Static Error] Could not serve index.html:", err);
+          res.status(500).send("Strategic Asset Load Failure. Please Wait...");
+        }
+      });
     });
   }
 
