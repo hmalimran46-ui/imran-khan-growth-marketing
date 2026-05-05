@@ -62,40 +62,48 @@ const defaultContent = {
   messages: []
 };
 
-// Initialize content file logic
-async function initializeContent() {
-  try {
-    await fs.access(CONTENT_FILE);
-    const data = await fs.readFile(CONTENT_FILE, "utf-8");
-    const existing = JSON.parse(data);
-    const merged = {
-      ...defaultContent,
-      ...existing,
-      hero: { ...defaultContent.hero, ...existing.hero },
-      about: { ...defaultContent.about, ...existing.about },
-      pricing: { ...defaultContent.pricing, ...existing.pricing },
-      coverBanner: { ...defaultContent.coverBanner, ...(existing.coverBanner || {}) },
-      contact: { ...defaultContent.contact, ...existing.contact },
-      offers: { ...defaultContent.offers, ...(existing.offers || {}) },
-      services: existing.services || defaultContent.services,
-      portfolio: existing.portfolio || defaultContent.portfolio,
-      messages: existing.messages || defaultContent.messages,
-    };
-    await fs.writeFile(CONTENT_FILE, JSON.stringify(merged, null, 2));
-  } catch {
-    // For Vercel, we might not have writable disk, but we initialize if possible
-    try {
-      await fs.writeFile(CONTENT_FILE, JSON.stringify(defaultContent, null, 2));
-    } catch (e) {
-      console.warn("Content initialization failed (expected on some cloud environments)", e);
-    }
-  }
+// Initialize content file logic - made non-blocking for Vercel
+function initializeContent() {
+  fs.access(CONTENT_FILE)
+    .then(async () => {
+      try {
+        const data = await fs.readFile(CONTENT_FILE, "utf-8");
+        const existing = JSON.parse(data);
+        const merged = {
+          ...defaultContent,
+          ...existing,
+          hero: { ...defaultContent.hero, ...existing.hero },
+          about: { ...defaultContent.about, ...existing.about },
+          pricing: { ...defaultContent.pricing, ...existing.pricing },
+          coverBanner: { ...defaultContent.coverBanner, ...(existing.coverBanner || {}) },
+          contact: { ...defaultContent.contact, ...existing.contact },
+          offers: { ...defaultContent.offers, ...(existing.offers || {}) },
+          services: existing.services || defaultContent.services,
+          portfolio: existing.portfolio || defaultContent.portfolio,
+          messages: existing.messages || defaultContent.messages,
+        };
+        // Only attempt write if environment might allow it
+        if (process.env.NODE_ENV !== 'production') {
+          await fs.writeFile(CONTENT_FILE, JSON.stringify(merged, null, 2));
+        }
+      } catch (e) {
+        console.warn("[Content] Parse error, skipping sync.");
+      }
+    })
+    .catch(() => {
+      console.log("[Content] Initializing with defaults (Read-only mode detected or file missing).");
+    });
 }
 
 // Global initialization
 initializeContent();
 
 // --- API Routes ---
+// Health Check
+app.get("/api/health", (req, res) => {
+  res.json({ status: "operational", timestamp: Date.now() });
+});
+
 // Login
 app.post("/api/login", (req, res) => {
   const { email, password } = req.body;

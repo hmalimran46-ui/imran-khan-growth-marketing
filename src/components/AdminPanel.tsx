@@ -13,14 +13,26 @@ export function AdminPanel() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isConnecting, setIsConnecting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'hero' | 'about' | 'services' | 'portfolio' | 'pricing' | 'contact' | 'inbox' | 'banner' | 'offers'>('hero');
   const [localContent, setLocalContent] = useState(content);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
-
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        const res = await fetch('/api/health');
+        if (!res.ok) console.warn("Strategic heartbeat weak.");
+      } catch (e) {
+        console.error("Mission Control unreachable:", e);
+      }
+    };
+    checkConnection();
+  }, []);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, target: 'about' | 'banner') => {
     const file = e.target.files?.[0];
@@ -54,22 +66,26 @@ export function AdminPanel() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsConnecting(true);
     try {
       const res = await fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
+      
       if (res.ok) {
         setIsAdmin(true);
         setError('');
       } else {
-        const data = await res.json();
-        setError(data.error || 'Identity Rejected.');
+        const data = await res.json().catch(() => ({ error: `Protocol Error: ${res.status}` }));
+        setError(data.error || `Access Denied (Code: ${res.status})`);
       }
     } catch (err) {
-      console.error("Login failed:", err);
-      setError('Connection failure. Protocol check required.');
+      console.error("Login attempt failure:", err);
+      setError(`CONNECTION FAILURE: ${err instanceof Error ? err.message : 'Unknown protocol error'}`);
+    } finally {
+      setIsConnecting(false);
     }
   };
 
@@ -166,9 +182,11 @@ export function AdminPanel() {
             
             <button 
               type="submit" 
-              className="w-full bg-brand-primary text-black font-black py-5 rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_10px_30px_rgba(0,255,156,0.2)] flex items-center justify-center gap-3 uppercase text-[10px] tracking-widest"
+              disabled={isConnecting}
+              className="w-full bg-brand-primary text-black font-black py-5 rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_10px_30px_rgba(0,255,156,0.2)] flex items-center justify-center gap-3 uppercase text-[10px] tracking-widest disabled:opacity-50"
             >
-              INITIALIZE COMMAND <ChevronRight className="w-5 h-5" />
+              {isConnecting ? 'AUTHENTICATING...' : 'INITIALIZE COMMAND'} 
+              {!isConnecting && <ChevronRight className="w-5 h-5" />}
             </button>
           </form>
         </motion.div>
