@@ -1,9 +1,12 @@
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
-import { createServer as createViteServer } from "vite";
 import fs from "fs/promises";
 import cookieParser from "cookie-parser";
+import cors from "cors";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,6 +16,7 @@ const CONTENT_FILE = path.join(process.cwd(), "site_content.json");
 const app = express();
 const PORT = 3000;
 
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '50mb' }));
 app.use(cookieParser());
 
@@ -115,22 +119,30 @@ app.get("/api/auth-status", (req, res) => {
 
 // Login
 app.post("/api/login", (req, res) => {
-  const { email, password } = req.body;
-  const adminEmail = process.env.ADMIN_EMAIL || "h.malimran46@gmail.com";
-  const adminPassword = process.env.ADMIN_PASSWORD || "Hm4648@#";
+  try {
+    const { email, password } = req.body;
+    const adminEmail = process.env.ADMIN_EMAIL || "h.malimran46@gmail.com";
+    const adminPassword = process.env.ADMIN_PASSWORD || "Hm4648@#";
 
-  if (email === adminEmail && password === adminPassword) {
-    // Setting set-cookie header with 30 days expiration
-    res.cookie("admin_session", "true", { 
-      httpOnly: true, 
-      secure: true, // Required for most modern browsers
-      sameSite: 'none', // Critical for cross-domain/sub-domain environments
-      path: '/',
-      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 Days Permanent Session
-    });
-    res.json({ success: true });
-  } else {
-    res.status(401).json({ error: "Identity Rejected. Incorrect Credentials." });
+    console.log(`[Login Attempt] Identity: ${email}`);
+
+    if (email === adminEmail && password === adminPassword) {
+      // Setting set-cookie header with 30 days expiration
+      res.cookie("admin_session", "true", { 
+        httpOnly: true, 
+        secure: true, 
+        sameSite: 'lax', // Changed from 'none' to 'lax' for better standard compatibility
+        path: '/',
+        maxAge: 30 * 24 * 60 * 60 * 1000 
+      });
+      res.json({ success: true });
+    } else {
+      console.warn(`[Login Failed] Invalid credentials for: ${email}`);
+      res.status(401).json({ error: "Identity Rejected. Incorrect Credentials." });
+    }
+  } catch (error) {
+    console.error(`[Login Crash]`, error);
+    res.status(500).json({ error: "Mission Control Internal Protocol Error." });
   }
 });
 
@@ -139,7 +151,7 @@ app.post("/api/logout", (req, res) => {
   res.clearCookie("admin_session", {
     httpOnly: true,
     secure: true,
-    sameSite: 'none',
+    sameSite: 'lax',
     path: '/'
   });
   res.json({ success: true });
@@ -197,28 +209,35 @@ app.post("/api/content", async (req, res) => {
 
 // --- Static / Development ---
 const isVercel = process.env.VERCEL === "1";
-if (process.env.NODE_ENV !== "production" && !isVercel) {
-  const vite = await createViteServer({
-    server: { middlewareMode: true },
-    appType: "spa",
-  });
-  app.use(vite.middlewares);
-} else {
-  const distPath = path.resolve(process.cwd(), "dist");
-  console.log(`[Static] Serving deployment assets from: ${distPath}`);
-  
-  app.use(express.static(distPath, { index: false }));
-  
-  app.get("*", (req, res) => {
-    const indexPath = path.join(distPath, "index.html");
-    res.sendFile(indexPath, (err) => {
-      if (err) {
-        console.error(`[Static Error] Asset missing at ${indexPath}:`, err);
-        res.status(500).send("Strategic Asset Load Failure. Re-deploying protocols...");
-      }
+// Only serve static files if NOT on Vercel
+// Vercel handles static files via vercel.json rewrites and direct serving
+if (!isVercel) {
+  if (process.env.NODE_ENV !== "production") {
+    const { createServer: createViteServer } = await import("vite");
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: "spa",
     });
-  });
+    app.use(vite.middlewares);
+  } else {
+    const distPath = path.resolve(process.cwd(), "dist");
+    app.use(express.static(distPath, { index: false }));
+    app.get("*", (req, res) => {
+      const indexPath = path.join(distPath, "index.html");
+      res.sendFile(indexPath, (err) => {
+        if (err) {
+          res.status(500).send("Strategic Asset Load Failure.");
+        }
+      });
+    });
+  }
 }
+
+// Global Error Handler
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('[Global Error]', err);
+  res.status(500).json({ error: 'System Protocol Disruption.', details: process.env.NODE_ENV === 'development' ? err.message : undefined });
+});
 
 // Only listen locally, Vercel handles serverless execution
 if (!isVercel) {

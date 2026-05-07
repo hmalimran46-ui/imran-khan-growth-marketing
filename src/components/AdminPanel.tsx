@@ -25,7 +25,7 @@ export function AdminPanel() {
   React.useEffect(() => {
     const initializeAuth = async () => {
       try {
-        const res = await fetch('/api/auth-status');
+        const res = await fetch('/api/auth-status', { credentials: 'include' });
         const data = await res.json();
         if (data.isAdmin) {
           setIsAdmin(true);
@@ -37,7 +37,7 @@ export function AdminPanel() {
     
     const checkConnection = async () => {
       try {
-        const res = await fetch('/api/health');
+        const res = await fetch('/api/health', { credentials: 'include' });
         if (!res.ok) console.warn("Strategic heartbeat weak.");
       } catch (e) {
         console.error("Mission Control unreachable:", e);
