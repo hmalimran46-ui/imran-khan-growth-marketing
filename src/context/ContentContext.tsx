@@ -135,6 +135,17 @@ export function ContentProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const init = async () => {
+      // 1. First, check localStorage for any "stale" but potentially newer local edits
+      const localStored = localStorage.getItem('site_content_cache');
+      if (localStored) {
+         try {
+           const parsed = JSON.parse(localStored);
+           setContent(prev => ({ ...prev, ...parsed }));
+         } catch (e) {
+           console.warn("Local cache corrupted");
+         }
+      }
+
       try {
         const [contentRes, authRes] = await Promise.all([
           fetch('/api/content', { credentials: 'include' }),
@@ -144,19 +155,22 @@ export function ContentProvider({ children }: { children: React.ReactNode }) {
         if (contentRes.ok) {
           const data = await contentRes.json();
           // Ensure all required fields exist by merging with defaults
-          setContent(prev => ({
-            ...prev,
+          const merged = {
+            ...defaultContent,
             ...data,
-            hero: { ...(prev?.hero || defaultContent.hero), ...(data.hero || {}) },
-            about: { ...(prev?.about || defaultContent.about), ...(data.about || {}) },
-            pricing: { ...(prev?.pricing || defaultContent.pricing), ...(data.pricing || {}) },
-            coverBanner: { ...(prev?.coverBanner || defaultContent.coverBanner), ...(data.coverBanner || {}) },
-            contact: { ...(prev?.contact || defaultContent.contact), ...(data.contact || {}) },
-            offers: { ...(prev?.offers || defaultContent.offers), ...(data.offers || {}) },
-            services: data.services || prev?.services || defaultContent.services,
-            portfolio: data.portfolio || prev?.portfolio || defaultContent.portfolio,
-            messages: data.messages || prev?.messages || defaultContent.messages,
-          }));
+            hero: { ...(defaultContent.hero), ...(data.hero || {}) },
+            about: { ...(defaultContent.about), ...(data.about || {}) },
+            pricing: { ...(defaultContent.pricing), ...(data.pricing || {}) },
+            coverBanner: { ...(defaultContent.coverBanner), ...(data.coverBanner || {}) },
+            contact: { ...(defaultContent.contact), ...(data.contact || {}) },
+            offers: { ...(defaultContent.offers), ...(data.offers || {}) },
+            services: data.services || defaultContent.services,
+            portfolio: data.portfolio || defaultContent.portfolio,
+            messages: data.messages || defaultContent.messages,
+          };
+          setContent(merged);
+          // Sync local storage with latest server data
+          localStorage.setItem('site_content_cache', JSON.stringify(merged));
         }
         
         if (authRes.ok) {
@@ -178,6 +192,8 @@ export function ContentProvider({ children }: { children: React.ReactNode }) {
     // Update local state and capture the new state object
     setContent(prev => {
       finalUpdated = { ...prev, ...newContent };
+      // Save to localStorage immediately for resilience
+      localStorage.setItem('site_content_cache', JSON.stringify(finalUpdated));
       return finalUpdated;
     });
  
@@ -189,6 +205,7 @@ export function ContentProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify(finalUpdated)
       });
       if (!res.ok) throw new Error("Synchronization failure with strategic server.");
+      return await res.json();
     } catch (error) {
       console.error(error);
       alert("Operational sync failure. Changes may not be persistent across sessions.");

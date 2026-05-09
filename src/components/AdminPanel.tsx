@@ -125,11 +125,14 @@ export function AdminPanel() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await updateContent(localContent);
-      alert('Strategic Data Synchronized Successfully. Note: If using temporary hosting without a database, changes may reset after a restart.');
+      const res = await updateContent(localContent) as any;
+      const persistenceNote = res?.persistence === 'memory' 
+        ? "ALERT: You are in an ephemeral environment (Cloud/Vercel). Changes will survive browser refreshes but will be LOST if the server restarts because Database (Firebase) was declined."
+        : "Strategy synchronized with local persistence.";
+      alert(`Strategic Data Synchronized Successfully.\n\n${persistenceNote}`);
     } catch (error) {
       console.error(error);
-      alert('Sync failure. Protocol disruption detected.');
+      alert('Sync failure. Protocol disruption detected. Check console for details.');
     } finally {
       setIsSaving(false);
     }
@@ -180,13 +183,13 @@ export function AdminPanel() {
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 ml-1">Secure Identifier</label>
               <input 
-                type="text" 
-                name="admin-id"
-                autoComplete="off"
+                type="email" 
+                name="admin-email"
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-brand-primary transition-all text-white font-light"
-                placeholder="Secure ID Required"
+                placeholder="email@example.com"
                 required
               />
             </div>
@@ -281,7 +284,7 @@ export function AdminPanel() {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 p-6 md:p-16 max-w-full overflow-x-hidden">
+      <main className="flex-1 p-4 sm:p-6 md:p-10 lg:p-16 max-w-full overflow-x-hidden">
         <motion.div
           key={activeTab}
           initial={{ opacity: 0, y: 10 }}
@@ -548,7 +551,7 @@ export function AdminPanel() {
                 >
                   <Plus className="w-5 h-5" /> Deploy New Portfolio Module
                 </button>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8">
                   {localContent.portfolio.map((item, index) => (
                     <div key={item.id} className="glass p-8 rounded-[2.5rem] border-white/5 flex flex-col gap-6 group hover:border-brand-primary/20 transition-all">
                       <div className="relative rounded-2xl overflow-hidden aspect-video border border-white/10 group-hover:shadow-[0_20px_40px_rgba(0,0,0,0.5)]">
@@ -608,9 +611,9 @@ export function AdminPanel() {
             )}
 
             {activeTab === 'pricing' && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
                  {([['basic', 'Starter Core'], ['standard', 'Advanced Growth'], ['premium', 'Enterprise Elite']] as const).map(([key, label]) => (
-                   <div key={key} className="glass p-10 rounded-[3rem] border-white/5 space-y-8 flex flex-col items-center">
+                   <div key={key} className="glass p-6 md:p-10 rounded-[2.5rem] md:rounded-[3rem] border-white/5 space-y-6 md:space-y-8 flex flex-col items-center">
                      <div className="w-12 h-12 rounded-2xl bg-brand-primary/10 flex items-center justify-center">
                        <DollarSign className="w-6 h-6 text-brand-primary" />
                      </div>
@@ -672,7 +675,7 @@ export function AdminPanel() {
             {activeTab === 'inbox' && (
               <div className="space-y-6">
                 {localContent.messages.length === 0 ? (
-                  <div className="glass p-20 rounded-[2.5rem] text-center border-2 border-dashed border-white/5">
+                  <div className="glass p-12 md:p-20 rounded-[2.5rem] text-center border-2 border-dashed border-white/5">
                      <MessageSquare className="w-12 h-12 text-gray-800 mx-auto mb-6" />
                      <p className="text-gray-600 font-black uppercase tracking-widest text-xs">Inbox Clear</p>
                   </div>
@@ -682,7 +685,7 @@ export function AdminPanel() {
                       key={msg.id}
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
-                      className="glass p-10 rounded-[2.5rem] border-white/5 hover:border-brand-primary/20 transition-all group relative overflow-hidden"
+                      className="glass p-6 md:p-10 rounded-[2rem] md:rounded-[2.5rem] border-white/5 hover:border-brand-primary/20 transition-all group relative overflow-hidden"
                     >
                       <div className="absolute top-0 right-0 w-1 h-full bg-brand-primary/20 opacity-0 group-hover:opacity-100 transition-opacity" />
                       

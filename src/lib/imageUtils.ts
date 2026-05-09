@@ -37,7 +37,7 @@ export async function compressImage(
       let result = canvas.toDataURL('image/jpeg', quality);
 
       // Keep reducing quality until under maxSize or quality is too low
-      while (result.length > maxSizeInMB * 1024 * 1024 * 1.33 && quality > 0.3) {
+      while (result.length > maxSizeInMB * 1024 * 1024 * 1.33 && quality > 0.1) {
         quality -= 0.1;
         result = canvas.toDataURL('image/jpeg', quality);
       }

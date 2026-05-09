@@ -11,7 +11,7 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const CONTENT_FILE = path.join(process.cwd(), "site_content.json");
+const CONTENT_FILE = path.join("/tmp", "site_content.json");
 
 const app = express();
 const PORT = 3000;
@@ -121,12 +121,12 @@ app.get("/api/auth-status", (req, res) => {
 app.post("/api/login", (req, res) => {
   try {
     const { email, password } = req.body;
-    const adminEmail = process.env.ADMIN_EMAIL || "h.malimran46@gmail.com";
+    const adminEmail = (process.env.ADMIN_EMAIL || "h.malimran46@gmail.com").toLowerCase();
     const adminPassword = process.env.ADMIN_PASSWORD || "Hm4648@#";
 
     console.log(`[Login Attempt] Identity: ${email}`);
 
-    if (email === adminEmail && password === adminPassword) {
+    if (email?.toLowerCase() === adminEmail && password === adminPassword) {
       // Setting set-cookie header with 30 days expiration
       res.cookie("admin_session", "true", { 
         httpOnly: true, 
@@ -159,13 +159,8 @@ app.post("/api/logout", (req, res) => {
 });
 
 // Fetch Content
-app.get("/api/content", async (req, res) => {
-  try {
-    const data = await fs.readFile(CONTENT_FILE, "utf-8");
-    res.json(JSON.parse(data));
-  } catch (error) {
-    res.json(memoryContent); // Fallback to memory on read error
-  }
+app.get("/api/content", (req, res) => {
+  res.json(memoryContent);
 });
 
 // Contact Message Submission (Public)
@@ -186,25 +181,32 @@ app.post("/api/contact", async (req, res) => {
 // Update Content (Admin Only)
 app.post("/api/content", async (req, res) => {
   const session = req.cookies.admin_session;
-  if (session !== "true") return res.status(401).json({ error: "Unauthorized" });
+  if (session !== "true") {
+    console.warn("[Content Update] Unauthorized attempt blocked.");
+    return res.status(401).json({ error: "Unauthorized" });
+  }
 
   try {
     const newContent = req.body;
+    if (!newContent || typeof newContent !== 'object') {
+      throw new Error("Invalid payload format.");
+    }
+    
     memoryContent = newContent;
+    console.log("[Content Sync] Memory state updated.");
     
-    // Only attempt write if NOT on Vercel
-    if (!process.env.VERCEL) {
+    // Attempt write only, don't crash if it fails (ephemeral storage)
+    try {
       await fs.writeFile(CONTENT_FILE, JSON.stringify(newContent, null, 2));
+      console.log("[Content Sync] Local storage synchronized.");
+    } catch (fsError) {
+      console.warn("[Content Sync] Local storage write failed (expected in some serverless environments).", fsError);
     }
     
-    res.json({ success: true });
-  } catch (error) {
-    // If write fails but on Vercel, it's expected, but we still updated memoryContent
-    if (process.env.VERCEL) {
-        res.json({ success: true, note: "Memory sync only" });
-    } else {
-        res.status(500).json({ error: "Operation failed" });
-    }
+    res.json({ success: true, persistence: !process.env.VERCEL ? 'local' : 'memory' });
+  } catch (error: any) {
+    console.error("[Content Sync Error]", error);
+    res.status(500).json({ error: "Strategic protocol failure during sync.", details: error.message });
   }
 });
 
