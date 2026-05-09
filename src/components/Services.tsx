@@ -9,25 +9,28 @@ export function About() {
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        alert("Strategic Asset too large. Please limit to 2MB.");
-        return;
-      }
-      
       setIsUploading(true);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        updateContent({ about: { ...content.about, profileImage: reader.result as string } })
-          .finally(() => setIsUploading(false));
-      };
-      reader.onerror = () => {
-        console.error("FileReader failed");
+      try {
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          try {
+            const { compressImage } = await import('../lib/imageUtils');
+            const compressed = await compressImage(reader.result as string, 3);
+            updateContent({ about: { ...content.about, profileImage: compressed } })
+              .finally(() => setIsUploading(false));
+          } catch (err) {
+            console.error("Compression failed:", err);
+            setIsUploading(false);
+          }
+        };
+        reader.readAsDataURL(file);
+      } catch (err) {
+        console.error("Upload failed:", err);
         setIsUploading(false);
-      };
-      reader.readAsDataURL(file);
+      }
     }
   };
 

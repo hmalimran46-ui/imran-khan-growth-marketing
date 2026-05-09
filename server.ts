@@ -131,14 +131,15 @@ app.post("/api/login", (req, res) => {
       res.cookie("admin_session", "true", { 
         httpOnly: true, 
         secure: true, 
-        sameSite: 'lax', // Changed from 'none' to 'lax' for better standard compatibility
+        sameSite: 'lax', 
         path: '/',
         maxAge: 30 * 24 * 60 * 60 * 1000 
       });
-      res.json({ success: true });
+      console.log(`[Login Success] Credentials verified.`);
+      return res.json({ success: true });
     } else {
       console.warn(`[Login Failed] Invalid credentials for: ${email}`);
-      res.status(401).json({ error: "Identity Rejected. Incorrect Credentials." });
+      return res.status(401).json({ error: "Identity Rejected. Incorrect Credentials." });
     }
   } catch (error) {
     console.error(`[Login Crash]`, error);

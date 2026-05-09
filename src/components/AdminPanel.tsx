@@ -3,10 +3,11 @@ import { useContent } from '../context/ContentContext';
 import { 
   Layout, Save, LogOut, Image, DollarSign, Type, Settings, 
   ChevronRight, X, MessageSquare, Mail, User, Clock, Trash2, 
-  Briefcase, Plus, Edit2, Globe, MessageCircle, Loader2, Upload, Link as LinkIcon, Tag, Package
+  Briefcase, Plus, Edit2, Globe, MessageCircle, Loader2, Upload, Link as LinkIcon, Tag, Package, AlertTriangle
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
+import { compressImage } from '../lib/imageUtils';
 
 export function AdminPanel() {
   const { content, updateContent, isAdmin, setIsAdmin } = useContent();
@@ -48,32 +49,37 @@ export function AdminPanel() {
     checkConnection();
   }, [setIsAdmin]);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, target: 'about' | 'banner') => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, target: 'about' | 'banner') => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        alert("Image too large. Please keep below 2MB.");
-        return;
-      }
       setIsUploading(true);
-      setUploadStatus("Processing visual asset...");
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (target === 'about') {
-          setLocalContent({ ...localContent, about: { ...localContent.about, profileImage: reader.result as string } });
-        } else {
-          setLocalContent({ ...localContent, coverBanner: { ...localContent.coverBanner, image: reader.result as string } });
-        }
-        setIsUploading(false);
-        setUploadStatus("Strategic asset synchronized.");
-        setTimeout(() => setUploadStatus(null), 3000);
-      };
-      reader.onerror = () => {
+      setUploadStatus("Processing & Compressing visual asset...");
+      
+      try {
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          try {
+            const compressed = await compressImage(reader.result as string, 3); // Max 3MB
+            if (target === 'about') {
+              setLocalContent({ ...localContent, about: { ...localContent.about, profileImage: compressed } });
+            } else {
+              setLocalContent({ ...localContent, coverBanner: { ...localContent.coverBanner, image: compressed } });
+            }
+            setIsUploading(false);
+            setUploadStatus("Strategic asset synchronized.");
+            setTimeout(() => setUploadStatus(null), 3000);
+          } catch (err) {
+            console.error("Compression failed:", err);
+            setIsUploading(false);
+            setUploadStatus("Compression failed.");
+          }
+        };
+        reader.readAsDataURL(file);
+      } catch (err) {
         setIsUploading(false);
         setUploadStatus("Upload failed.");
         setTimeout(() => setUploadStatus(null), 3000);
-      };
-      reader.readAsDataURL(file);
+      }
     }
   };
 
@@ -120,9 +126,10 @@ export function AdminPanel() {
     setIsSaving(true);
     try {
       await updateContent(localContent);
-      alert('Strategic Data Synchronized Successfully.');
+      alert('Strategic Data Synchronized Successfully. Note: If using temporary hosting without a database, changes may reset after a restart.');
     } catch (error) {
       console.error(error);
+      alert('Sync failure. Protocol disruption detected.');
     } finally {
       setIsSaving(false);
     }
@@ -213,22 +220,28 @@ export function AdminPanel() {
   }
 
   return (
-    <div className="min-h-screen bg-[#00040a] text-white flex flex-col md:flex-row">
+    <div className="min-h-screen bg-[#00040a] text-white flex flex-col lg:flex-row">
       {/* Sidebar Nav */}
-      <aside className="w-full md:w-64 bg-[#000810] border-r border-white/5 flex flex-col sticky top-0 h-screen overflow-y-auto">
-        <div className="p-8">
-          <div className="text-xl font-black italic tracking-tighter uppercase mb-2">
-            Admin<span className="text-brand-primary">Control</span>
+      <aside className="w-full lg:w-64 bg-[#000810] border-r border-white/5 flex flex-col lg:sticky top-0 lg:h-screen overflow-y-auto z-40">
+        <div className="p-8 pb-4 lg:pb-8 flex justify-between items-center lg:block">
+          <div>
+            <div className="text-xl font-black italic tracking-tighter uppercase mb-2">
+              Admin<span className="text-brand-primary">Control</span>
+            </div>
+            <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Growth Architecture OS</p>
           </div>
-          <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Growth Architecture OS</p>
+          {/* Mobile indicator */}
+          <div className="lg:hidden w-2 h-2 rounded-full bg-brand-primary animate-pulse shadow-[0_0_10px_#00ff9c]" />
         </div>
-
-        <nav className="flex-1 px-4 space-y-2">
-          {(['hero', 'banner', 'about', 'services', 'portfolio', 'pricing', 'contact', 'inbox'] as const).map(tab => (
+ 
+        <nav className="flex-1 px-4 py-4 space-y-2 flex lg:flex-col overflow-x-auto lg:overflow-visible no-scrollbar scroll-smooth">
+          {(['hero', 'banner', 'about', 'services', 'portfolio', 'pricing', 'contact', 'inbox', 'offers'] as const).map(tab => (
             <button 
               key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`w-full text-left text-[10px] font-black uppercase tracking-widest transition-all px-6 py-4 rounded-xl flex items-center justify-between group ${activeTab === tab ? 'bg-brand-primary text-black' : 'text-gray-500 hover:text-white hover:bg-white/5'}`}
+              onClick={() => {
+                setActiveTab(tab);
+              }}
+              className={`whitespace-nowrap lg:whitespace-normal flex-shrink-0 text-left text-[10px] font-black uppercase tracking-widest transition-all px-6 py-4 rounded-xl flex items-center justify-between group relative ${activeTab === tab ? 'bg-brand-primary text-black' : 'text-gray-500 hover:text-white hover:bg-white/5'}`}
             >
               <div className="flex items-center gap-3">
                 {tab === 'hero' && <Layout className="w-4 h-4" />}
@@ -239,27 +252,17 @@ export function AdminPanel() {
                 {tab === 'pricing' && <DollarSign className="w-4 h-4" />}
                 {tab === 'contact' && <Mail className="w-4 h-4" />}
                 {tab === 'inbox' && <MessageSquare className="w-4 h-4" />}
-                {tab}
+                {tab === 'offers' && <Tag className="w-4 h-4" />}
+                <span className="uppercase">{tab}</span>
               </div>
-              {tab === 'inbox' && content.messages.length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] px-1.5 py-0.5 rounded-full animate-pulse">{content.messages.length}</span>
-            )}
-          </button>
-        ))}
-        {/* New Offers Tab Button */}
-        <button 
-          onClick={() => setActiveTab('offers')}
-          className={`flex-1 md:flex-none px-6 py-4 rounded-2xl flex items-center justify-between gap-4 transition-all duration-300 relative group
-            ${activeTab === 'offers' ? 'bg-brand-primary text-black' : 'hover:bg-white/5 text-gray-500'}`}
-        >
-          <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest italic group-hover:translate-x-1 transition-transform">
-            <Tag className="w-4 h-4" />
-            OFFERS
-          </div>
-        </button>
-      </nav>
-
-        <div className="p-6 mt-auto border-t border-white/5 space-y-4">
+              {tab === 'inbox' && content.messages.filter(m => m.status === 'pending').length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] px-1.5 py-0.5 rounded-full animate-pulse shadow-lg">{content.messages.filter(m => m.status === 'pending').length}</span>
+              )}
+            </button>
+          ))}
+        </nav>
+ 
+        <div className="p-6 mt-auto border-t border-white/5 space-y-4 bg-[#010c1a]/50">
           <button 
             onClick={handleSave}
             disabled={isSaving}
@@ -278,13 +281,25 @@ export function AdminPanel() {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 p-6 md:p-16 max-w-5xl overflow-y-auto">
+      <main className="flex-1 p-6 md:p-16 max-w-full overflow-x-hidden">
         <motion.div
           key={activeTab}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
         >
+          {/* Alert for Vercel Persistence */}
+          <div className="mb-8 p-6 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl flex items-center gap-4">
+            <AlertTriangle className="w-6 h-6 text-yellow-500 shrink-0" />
+            <div>
+              <p className="text-yellow-500 text-[10px] font-black uppercase tracking-widest">Persistence Protocol Warning</p>
+              <p className="text-gray-400 text-xs mt-1 leading-relaxed">
+                Database integration (Firebase) was declined. On public hosting (Vercel), changes will reset whenever the server restarts. 
+                <span className="text-brand-primary block mt-1">Recommendation: Use a professional database for permanent storage.</span>
+              </p>
+            </div>
+          </div>
+
           {/* Header */}
           <div className="mb-12">
             <h2 className="text-4xl md:text-6xl font-black tracking-tighter uppercase italic drop-shadow-2xl">{activeTab}</h2>
