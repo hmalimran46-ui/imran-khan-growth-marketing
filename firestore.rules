@@ -1,0 +1,53 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net - Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helper Functions ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isSignedIn() 
+        && request.auth.token.email == "h.malimran46@gmail.com"
+        && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- Collections ---
+
+    // Site Content Rule
+    match /content/{contentId} {
+      // Publicly readable content
+      allow read: if isValidId(contentId);
+      
+      // Admin only modification
+      allow write: if isAdmin() 
+        && isValidId(contentId);
+    }
+
+    // Messages Collection Rule
+    match /messages/{messageId} {
+      // Anyone can submit a message (create)
+      allow create: if isValidId(messageId);
+      
+      // Only admin can read/list/delete messages
+      allow read, list, delete: if isAdmin();
+    }
+  }
+}

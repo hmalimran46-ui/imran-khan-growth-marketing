@@ -1,0 +1,44 @@
+{
+  "entities": {
+    "SiteContent": {
+      "title": "Site Content",
+      "description": "Global content for the website including banners, text, and settings.",
+      "type": "object",
+      "properties": {
+        "hero": { "type": "object" },
+        "about": { "type": "object" },
+        "pricing": { "type": "object" },
+        "coverBanner": { "type": "object" },
+        "contact": { "type": "object" },
+        "offers": { "type": "object" },
+        "services": { "type": "array" },
+        "portfolio": { "type": "array" },
+        "messages": { "type": "array" }
+      }
+    },
+    "ContactMessage": {
+      "title": "Contact Message",
+      "description": "Messages sent from the contact form.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "subject": { "type": "string" },
+        "message": { "type": "string" },
+        "date": { "type": "string" },
+        "timestamp": { "type": "number" }
+      }
+    }
+  },
+  "firestore": {
+    "/content/global": {
+      "schema": "SiteContent",
+      "description": "The singleton document for global site content."
+    },
+    "/messages/{messageId}": {
+      "schema": "ContactMessage",
+      "description": "Collection of user contact messages."
+    }
+  }
+}

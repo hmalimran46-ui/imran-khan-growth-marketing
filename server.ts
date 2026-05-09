@@ -5,8 +5,42 @@ import fs from "fs/promises";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import dotenv from "dotenv";
+import { initializeApp } from 'firebase/app';
+import { getFirestore, doc, getDoc, setDoc, collection, addDoc, getDocs, deleteDoc, updateDoc } from 'firebase/firestore';
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 
 dotenv.config();
+
+// Load Firebase Config
+const firebaseConfig = JSON.parse(await fs.readFile(path.join(process.cwd(), "firebase-applet-config.json"), "utf-8"));
+const firebaseApp = initializeApp(firebaseConfig);
+const db = getFirestore(firebaseApp);
+const auth = getAuth(firebaseApp);
+
+// Admin Identity for Firebase Auth
+const adminEmail = (process.env.ADMIN_EMAIL || "h.malimran46@gmail.com").toLowerCase();
+const adminPassword = process.env.ADMIN_PASSWORD || "Hm4648@#";
+
+// Authenticate Server as Admin
+async function authenticateFirebase() {
+  try {
+    await signInWithEmailAndPassword(auth, adminEmail, adminPassword);
+    console.log("[Firebase] Server authenticated as Admin.");
+  } catch (error: any) {
+    if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+      try {
+        await createUserWithEmailAndPassword(auth, adminEmail, adminPassword);
+        console.log("[Firebase] Admin user created and authenticated.");
+      } catch (createError) {
+        console.error("[Firebase] Failed to create admin user:", createError);
+      }
+    } else {
+      console.error("[Firebase] Authentication failed:", error);
+    }
+  }
+}
+
+authenticateFirebase();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,7 +54,28 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '50mb' }));
 app.use(cookieParser());
 
+// Error types as per integration instructions
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    operationType,
+    path
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
+
 const defaultContent = {
+// ... (rest remains same)
   hero: {
     badge: "GLOBAL GROWTH ARCHITECTURE",
     headline: "GROW YOUR BUSINESS WITH\nSMART DIGITAL\nMARKETING",
@@ -105,6 +160,74 @@ function initializeContent() {
 // Global initialization
 initializeContent();
 
+async function getSiteContent() {
+  try {
+    const docRef = doc(db, "content", "global");
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return docSnap.data();
+    }
+  } catch (error) {
+    console.error("[Firebase] Error fetching site content:", error);
+  }
+  return null;
+}
+
+async function saveSiteContent(data: any) {
+  try {
+    const docRef = doc(db, "content", "global");
+    await setDoc(docRef, data);
+    console.log("[Firebase] Site content saved successfully.");
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, "content/global");
+  }
+}
+
+async function saveMessage(message: any) {
+  try {
+    const colRef = collection(db, "messages");
+    await addDoc(colRef, {
+      ...message,
+      timestamp: Date.now(),
+      serverTimestamp: new Date().toISOString()
+    });
+    console.log("[Firebase] Message saved successfully.");
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, "messages");
+  }
+}
+
+async function getMessages() {
+  try {
+    const colRef = collection(db, "messages");
+    const snapshot = await getDocs(colRef);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  } catch (error) {
+    console.error("[Firebase] Error fetching messages:", error);
+    return [];
+  }
+}
+
+// Initial content sync with Firestore
+async function syncWithFirestore() {
+  const cloudContent = await getSiteContent();
+  if (cloudContent) {
+    console.log("[Firebase] Synchronized with cloud state.");
+    memoryContent = { ...memoryContent, ...cloudContent };
+    
+    // Also fetch messages
+    const cloudMessages = await getMessages();
+    if (cloudMessages.length > 0) {
+      memoryContent.messages = cloudMessages;
+    }
+  } else {
+    console.log("[Firebase] No cloud state found, initializing Firestore with local defaults.");
+    await saveSiteContent(memoryContent);
+  }
+}
+
+syncWithFirestore();
+
 // --- API Routes ---
 // Health Check
 app.get("/api/health", (req, res) => {
@@ -167,13 +290,18 @@ app.get("/api/content", (req, res) => {
 app.post("/api/contact", async (req, res) => {
   try {
     const newMessage = req.body;
+    // Save to memory and local for fallback
     memoryContent.messages = [newMessage, ...memoryContent.messages];
     
+    // Persistent Cloud Storage
+    await saveMessage(newMessage);
+
     if (!process.env.VERCEL) {
       await fs.writeFile(CONTENT_FILE, JSON.stringify(memoryContent, null, 2));
     }
     res.json({ success: true, orderId: newMessage.orderId });
   } catch (error) {
+    console.error("[Contact Error]", error);
     res.status(500).json({ error: "Failed to process mission request." });
   }
 });
@@ -195,15 +323,20 @@ app.post("/api/content", async (req, res) => {
     memoryContent = newContent;
     console.log("[Content Sync] Memory state updated.");
     
+    // Persistent Cloud Storage
+    await saveSiteContent(newContent);
+
     // Attempt write only, don't crash if it fails (ephemeral storage)
     try {
-      await fs.writeFile(CONTENT_FILE, JSON.stringify(newContent, null, 2));
-      console.log("[Content Sync] Local storage synchronized.");
+      if (!process.env.VERCEL) {
+        await fs.writeFile(CONTENT_FILE, JSON.stringify(newContent, null, 2));
+        console.log("[Content Sync] Local storage synchronized.");
+      }
     } catch (fsError) {
-      console.warn("[Content Sync] Local storage write failed (expected in some serverless environments).", fsError);
+      console.warn("[Content Sync] Local storage write failed.", fsError);
     }
     
-    res.json({ success: true, persistence: !process.env.VERCEL ? 'local' : 'memory' });
+    res.json({ success: true, persistence: 'firebase' });
   } catch (error: any) {
     console.error("[Content Sync Error]", error);
     res.status(500).json({ error: "Strategic protocol failure during sync.", details: error.message });

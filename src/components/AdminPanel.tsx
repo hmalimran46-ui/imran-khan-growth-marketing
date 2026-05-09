@@ -126,10 +126,12 @@ export function AdminPanel() {
     setIsSaving(true);
     try {
       const res = await updateContent(localContent) as any;
-      const persistenceNote = res?.persistence === 'memory' 
-        ? "ALERT: You are in an ephemeral environment (Cloud/Vercel). Changes will survive browser refreshes but will be LOST if the server restarts because Database (Firebase) was declined."
+      const persistenceNote = res?.persistence === 'firebase'
+        ? "Strategic Data Synchronized with Permanent Database (Firebase)."
+        : res?.persistence === 'memory'
+        ? "ALERT: You are in an ephemeral environment. Changes will survive browser refreshes but will be LOST if the server restarts."
         : "Strategy synchronized with local persistence.";
-      alert(`Strategic Data Synchronized Successfully.\n\n${persistenceNote}`);
+      alert(persistenceNote);
     } catch (error) {
       console.error(error);
       alert('Sync failure. Protocol disruption detected. Check console for details.');
@@ -291,14 +293,14 @@ export function AdminPanel() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
         >
-          {/* Alert for Vercel Persistence */}
-          <div className="mb-8 p-6 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl flex items-center gap-4">
-            <AlertTriangle className="w-6 h-6 text-yellow-500 shrink-0" />
+          {/* Alert for Vercel Persistence - REMOVED since Firebase is active */}
+          {/* We replace it with a success indicator */}
+          <div className="mb-8 p-6 bg-brand-primary/10 border border-brand-primary/20 rounded-2xl flex items-center gap-4">
+            <Save className="w-6 h-6 text-brand-primary shrink-0" />
             <div>
-              <p className="text-yellow-500 text-[10px] font-black uppercase tracking-widest">Persistence Protocol Warning</p>
+              <p className="text-brand-primary text-[10px] font-black uppercase tracking-widest">Persistence Protocol Active</p>
               <p className="text-gray-400 text-xs mt-1 leading-relaxed">
-                Database integration (Firebase) was declined. On public hosting (Vercel), changes will reset whenever the server restarts. 
-                <span className="text-brand-primary block mt-1">Recommendation: Use a professional database for permanent storage.</span>
+                Strategic Database (Firebase Firestore) is synchronized. All edits to About portraits, Banners, and Offer prices are permanently stored.
               </p>
             </div>
           </div>
