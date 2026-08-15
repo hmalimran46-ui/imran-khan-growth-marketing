@@ -3,9 +3,10 @@ import { useContent } from '../context/ContentContext';
 import { 
   Layout, Save, LogOut, Image, DollarSign, Type, Settings, 
   ChevronRight, X, MessageSquare, Mail, User, Clock, Trash2, 
-  Briefcase, Plus, Edit2, Globe, MessageCircle, Loader2, Upload, Link as LinkIcon, Tag, Package, AlertTriangle
+  Briefcase, Plus, Edit2, Globe, MessageCircle, Loader2, Upload, Link as LinkIcon, Tag, Package, AlertTriangle,
+  CheckCircle2, AlertCircle
 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { compressImage } from '../lib/imageUtils';
 
@@ -18,10 +19,20 @@ export function AdminPanel() {
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'hero' | 'about' | 'services' | 'portfolio' | 'pricing' | 'contact' | 'inbox' | 'banner' | 'offers'>('hero');
   const [localContent, setLocalContent] = useState(content);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
+
+  // Synchronize localContent when database content is loaded
+  React.useEffect(() => {
+    if (content && !isInitialized) {
+      setLocalContent(content);
+      setIsInitialized(true);
+    }
+  }, [content, isInitialized]);
 
   React.useEffect(() => {
     const initializeAuth = async () => {
@@ -53,20 +64,20 @@ export function AdminPanel() {
     const file = e.target.files?.[0];
     if (file) {
       setIsUploading(true);
-      setUploadStatus("Processing & Compressing visual asset...");
+      setUploadStatus("Processing & Compressing visual asset (<350KB)...");
       
       try {
         const reader = new FileReader();
         reader.onloadend = async () => {
           try {
-            const compressed = await compressImage(reader.result as string, 3); // Max 3MB
+            const compressed = await compressImage(reader.result as string, 0.35, 1200);
             if (target === 'about') {
-              setLocalContent({ ...localContent, about: { ...localContent.about, profileImage: compressed } });
+              setLocalContent(prev => ({ ...prev, about: { ...prev.about, profileImage: compressed } }));
             } else {
-              setLocalContent({ ...localContent, coverBanner: { ...localContent.coverBanner, image: compressed } });
+              setLocalContent(prev => ({ ...prev, coverBanner: { ...prev.coverBanner, image: compressed } }));
             }
             setIsUploading(false);
-            setUploadStatus("Strategic asset synchronized.");
+            setUploadStatus("Visual asset compressed and ready to save.");
             setTimeout(() => setUploadStatus(null), 3000);
           } catch (err) {
             console.error("Compression failed:", err);
@@ -123,27 +134,42 @@ export function AdminPanel() {
   };
 
   const handleSave = async () => {
+    if (isSaving) return;
     setIsSaving(true);
+    setNotification(null);
     try {
-      const res = await updateContent(localContent) as any;
-      const persistenceNote = res?.persistence === 'firebase'
-        ? "Strategic Data Synchronized with Permanent Database (Firebase)."
-        : res?.persistence === 'memory'
-        ? "ALERT: You are in an ephemeral environment. Changes will survive browser refreshes but will be LOST if the server restarts."
-        : "Strategy synchronized with local persistence.";
-      alert(persistenceNote);
-    } catch (error) {
-      console.error(error);
-      alert('Sync failure. Protocol disruption detected. Check console for details.');
+      const res = await updateContent(localContent);
+      if (res?.data) {
+        setLocalContent(res.data);
+      }
+      setNotification({
+        type: 'success',
+        message: 'All strategic data permanently saved to Firestore database!'
+      });
+      setTimeout(() => {
+        setNotification(null);
+      }, 4000);
+    } catch (error: any) {
+      console.error("[Admin Save Error]", error);
+      setNotification({
+        type: 'error',
+        message: error?.message || 'Database sync failure. Please check connection and try again.'
+      });
     } finally {
       setIsSaving(false);
     }
   };
 
-  const deleteMessage = (id: string) => {
+  const deleteMessage = async (id: string) => {
     const updatedMessages = localContent.messages.filter(m => m.id !== id);
     setLocalContent({ ...localContent, messages: updatedMessages });
-    updateContent({ ...localContent, messages: updatedMessages });
+    try {
+      await updateContent({ messages: updatedMessages });
+      setNotification({ type: 'success', message: 'Message removed from records.' });
+      setTimeout(() => setNotification(null), 3000);
+    } catch (err: any) {
+      setNotification({ type: 'error', message: 'Failed to update messages.' });
+    }
   };
 
   // Helper for adding dynamic items
@@ -286,27 +312,64 @@ export function AdminPanel() {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 p-4 sm:p-6 md:p-10 lg:p-16 max-w-full overflow-x-hidden">
+      <main className="flex-1 p-4 sm:p-6 md:p-10 lg:p-16 max-w-full overflow-x-hidden relative">
+        {/* Floating Toast Notification */}
+        <AnimatePresence>
+          {notification && (
+            <motion.div
+              initial={{ opacity: 0, y: -20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.95 }}
+              className={`fixed top-6 right-6 z-50 px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 text-xs font-black uppercase tracking-widest border backdrop-blur-xl ${
+                notification.type === 'success'
+                  ? 'bg-brand-primary/10 text-brand-primary border-brand-primary/30 shadow-[0_0_30px_rgba(0,255,156,0.25)]'
+                  : 'bg-red-500/10 text-red-400 border-red-500/30 shadow-[0_0_30px_rgba(239,68,68,0.25)]'
+              }`}
+            >
+              {notification.type === 'success' ? (
+                <CheckCircle2 className="w-5 h-5 text-brand-primary shrink-0" />
+              ) : (
+                <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
+              )}
+              <span>{notification.message}</span>
+              <button 
+                type="button"
+                onClick={() => setNotification(null)}
+                className="ml-2 text-gray-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <motion.div
           key={activeTab}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
         >
-          {/* Alert for Vercel Persistence - REMOVED since Firebase is active */}
-          {/* We replace it with a success indicator */}
-          <div className="mb-8 p-6 bg-brand-primary/10 border border-brand-primary/20 rounded-2xl flex items-center gap-4">
-            <Save className="w-6 h-6 text-brand-primary shrink-0" />
-            <div>
-              <p className="text-brand-primary text-[10px] font-black uppercase tracking-widest">Persistence Protocol Active</p>
-              <p className="text-gray-400 text-xs mt-1 leading-relaxed">
-                Strategic Database (Firebase Firestore) is synchronized. All edits to About portraits, Banners, and Offer prices are permanently stored.
+          {/* Top Status & Quick Save Header Bar */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+            <div className="flex items-center gap-3">
+              <div className="w-3 h-3 rounded-full bg-brand-primary animate-pulse shadow-[0_0_10px_#00ff9c]" />
+              <p className="text-brand-primary text-[10px] font-black uppercase tracking-widest">
+                Database Source of Truth • Multi-Device Sync Active
               </p>
             </div>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={isSaving}
+              className="py-3 px-6 bg-brand-primary text-black rounded-xl font-black text-[10px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+              {isSaving ? 'Saving to Database...' : 'Save Changes'}
+            </button>
           </div>
 
           {/* Header */}
-          <div className="mb-12">
+          <div className="mb-10">
             <h2 className="text-4xl md:text-6xl font-black tracking-tighter uppercase italic drop-shadow-2xl">{activeTab}</h2>
             <div className="w-12 h-1 bg-brand-primary mt-4" />
           </div>

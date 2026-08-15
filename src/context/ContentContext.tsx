@@ -186,29 +186,53 @@ export function ContentProvider({ children }: { children: React.ReactNode }) {
     init();
   }, []);
 
-  const updateContent = async (newContent: Partial<ContentState>) => {
-    let finalUpdated: ContentState = content;
-    
-    // Update local state and capture the new state object
-    setContent(prev => {
-      finalUpdated = { ...prev, ...newContent };
-      // Save to localStorage immediately for resilience
-      localStorage.setItem('site_content_cache', JSON.stringify(finalUpdated));
-      return finalUpdated;
-    });
- 
+  const updateContent = async (newContent: Partial<ContentState>): Promise<{ success: boolean; persistence?: string; data?: ContentState }> => {
+    const finalUpdated: ContentState = {
+      ...content,
+      ...newContent,
+      hero: { ...content.hero, ...(newContent.hero || {}) },
+      about: { ...content.about, ...(newContent.about || {}) },
+      pricing: { ...content.pricing, ...(newContent.pricing || {}) },
+      coverBanner: { ...content.coverBanner, ...(newContent.coverBanner || {}) },
+      contact: { ...content.contact, ...(newContent.contact || {}) },
+      offers: { ...content.offers, ...(newContent.offers || {}) },
+      services: newContent.services || content.services,
+      portfolio: newContent.portfolio || content.portfolio,
+      messages: newContent.messages || content.messages,
+    };
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
     try {
       const res = await fetch('/api/content', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
+        signal: controller.signal,
         body: JSON.stringify(finalUpdated)
       });
-      if (!res.ok) throw new Error("Synchronization failure with strategic server.");
-      return await res.json();
-    } catch (error) {
-      console.error(error);
-      alert("Operational sync failure. Changes may not be persistent across sessions.");
+      clearTimeout(timeoutId);
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: `Server error code ${res.status}` }));
+        throw new Error(errorData.error || errorData.details || `Database persistence failed (${res.status})`);
+      }
+
+      const responseJson = await res.json();
+      const verifiedContent = responseJson.data || finalUpdated;
+
+      // Update state and cache with verified saved state
+      setContent(verifiedContent);
+      localStorage.setItem('site_content_cache', JSON.stringify(verifiedContent));
+
+      return responseJson;
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+      console.error("[ContentContext] Save error:", error);
+      if (error.name === 'AbortError') {
+        throw new Error("Save request timed out. Please check your network connection and retry.");
+      }
       throw error;
     }
   };

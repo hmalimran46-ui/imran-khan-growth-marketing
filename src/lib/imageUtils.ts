@@ -1,11 +1,11 @@
 /**
- * Resizes an image file to stay within a specific byte size limit (approx)
- * and maximum width/height while maintaining aspect ratio.
+ * Resizes an image file to stay well within Firestore document limits (< 300KB)
+ * and maximum width/height while maintaining crisp visual fidelity and aspect ratio.
  */
 export async function compressImage(
   dataUrl: string,
-  maxSizeInMB: number = 4,
-  maxWidth: number = 2400
+  maxSizeInMB: number = 0.35,
+  maxWidth: number = 1200
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -15,10 +15,16 @@ export async function compressImage(
       let width = img.width;
       let height = img.height;
 
-      // Calculate new dimensions
-      if (width > maxWidth) {
-        height = (height * maxWidth) / width;
-        width = maxWidth;
+      // Restrict max width/height while maintaining aspect ratio
+      const maxDim = maxWidth;
+      if (width > maxDim || height > maxDim) {
+        if (width > height) {
+          height = Math.round((height * maxDim) / width);
+          width = maxDim;
+        } else {
+          width = Math.round((width * maxDim) / height);
+          height = maxDim;
+        }
       }
 
       canvas.width = width;
@@ -30,14 +36,17 @@ export async function compressImage(
         return;
       }
 
+      // Smooth rendering
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(img, 0, 0, width, height);
 
-      // Start with high quality and reduce if needed
-      let quality = 0.92;
+      // Start with balanced quality and iteratively reduce if needed
+      let quality = 0.82;
       let result = canvas.toDataURL('image/jpeg', quality);
 
-      // Keep reducing quality until under maxSize or quality is too low
-      while (result.length > maxSizeInMB * 1024 * 1024 * 1.33 && quality > 0.1) {
+      const targetByteLength = maxSizeInMB * 1024 * 1024;
+      while (result.length > targetByteLength && quality > 0.3) {
         quality -= 0.1;
         result = canvas.toDataURL('image/jpeg', quality);
       }

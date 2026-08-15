@@ -173,6 +173,23 @@ function initializeContent() {
 // Global initialization
 initializeContent();
 
+function cleanForFirestore(obj: any): any {
+  if (obj === null || obj === undefined) return null;
+  if (Array.isArray(obj)) {
+    return obj.map(item => cleanForFirestore(item));
+  }
+  if (typeof obj === 'object') {
+    const cleaned: any = {};
+    for (const [key, value] of Object.entries(obj)) {
+      if (value !== undefined) {
+        cleaned[key] = cleanForFirestore(value);
+      }
+    }
+    return cleaned;
+  }
+  return obj;
+}
+
 async function getSiteContent() {
   try {
     const docRef = doc(db, "content", "global");
@@ -186,24 +203,22 @@ async function getSiteContent() {
   return null;
 }
 
-async function saveSiteContent(data: any) {
-  try {
-    const docRef = doc(db, "content", "global");
-    await setDoc(docRef, data);
-    console.log("[Firebase] Site content saved successfully.");
-  } catch (error) {
-    handleFirestoreError(error, OperationType.WRITE, "content/global");
-  }
+async function saveSiteContent(data: any): Promise<void> {
+  const docRef = doc(db, "content", "global");
+  const cleanData = cleanForFirestore(data);
+  await setDoc(docRef, cleanData);
+  console.log("[Firebase] Site content saved successfully to Firestore.");
 }
 
 async function saveMessage(message: any) {
   try {
     const colRef = collection(db, "messages");
-    await addDoc(colRef, {
+    const cleanMsg = cleanForFirestore({
       ...message,
       timestamp: Date.now(),
       serverTimestamp: new Date().toISOString()
     });
+    await addDoc(colRef, cleanMsg);
     console.log("[Firebase] Message saved successfully.");
   } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, "messages");
@@ -228,7 +243,20 @@ async function syncWithFirestore() {
     const cloudContent = await getSiteContent();
     if (cloudContent) {
       console.log("[Firebase] Synchronized with cloud state.");
-      memoryContent = { ...memoryContent, ...cloudContent };
+      memoryContent = {
+        ...defaultContent,
+        ...memoryContent,
+        ...cloudContent,
+        hero: { ...defaultContent.hero, ...(memoryContent.hero || {}), ...(cloudContent.hero || {}) },
+        about: { ...defaultContent.about, ...(memoryContent.about || {}), ...(cloudContent.about || {}) },
+        pricing: { ...defaultContent.pricing, ...(memoryContent.pricing || {}), ...(cloudContent.pricing || {}) },
+        coverBanner: { ...defaultContent.coverBanner, ...(memoryContent.coverBanner || {}), ...(cloudContent.coverBanner || {}) },
+        contact: { ...defaultContent.contact, ...(memoryContent.contact || {}), ...(cloudContent.contact || {}) },
+        offers: { ...defaultContent.offers, ...(memoryContent.offers || {}), ...(cloudContent.offers || {}) },
+        services: cloudContent.services || memoryContent.services || defaultContent.services,
+        portfolio: cloudContent.portfolio || memoryContent.portfolio || defaultContent.portfolio,
+        messages: cloudContent.messages || memoryContent.messages || defaultContent.messages,
+      };
       
       // Also fetch messages
       const cloudMessages = await getMessages();
@@ -299,8 +327,29 @@ app.post("/api/logout", (req, res) => {
   res.json({ success: true });
 });
 
-// Fetch Content
-app.get("/api/content", (req, res) => {
+// Fetch Content (Always query Firestore as primary Single Source of Truth)
+app.get("/api/content", async (req, res) => {
+  try {
+    const cloudContent = await getSiteContent();
+    if (cloudContent) {
+      memoryContent = {
+        ...defaultContent,
+        ...memoryContent,
+        ...cloudContent,
+        hero: { ...defaultContent.hero, ...(memoryContent.hero || {}), ...(cloudContent.hero || {}) },
+        about: { ...defaultContent.about, ...(memoryContent.about || {}), ...(cloudContent.about || {}) },
+        pricing: { ...defaultContent.pricing, ...(memoryContent.pricing || {}), ...(cloudContent.pricing || {}) },
+        coverBanner: { ...defaultContent.coverBanner, ...(memoryContent.coverBanner || {}), ...(cloudContent.coverBanner || {}) },
+        contact: { ...defaultContent.contact, ...(memoryContent.contact || {}), ...(cloudContent.contact || {}) },
+        offers: { ...defaultContent.offers, ...(memoryContent.offers || {}), ...(cloudContent.offers || {}) },
+        services: cloudContent.services || memoryContent.services || defaultContent.services,
+        portfolio: cloudContent.portfolio || memoryContent.portfolio || defaultContent.portfolio,
+        messages: cloudContent.messages || memoryContent.messages || defaultContent.messages,
+      };
+    }
+  } catch (err) {
+    console.error("[Content Fetch Error]", err);
+  }
   res.json(memoryContent);
 });
 
@@ -324,40 +373,44 @@ app.post("/api/contact", async (req, res) => {
   }
 });
 
-// Update Content (Admin Only)
+// Update Content (Admin Only with Direct Firestore Persistence)
 app.post("/api/content", async (req, res) => {
   const session = req.cookies.admin_session;
   if (session !== "true") {
     console.warn("[Content Update] Unauthorized attempt blocked.");
-    return res.status(401).json({ error: "Unauthorized" });
+    return res.status(401).json({ error: "Unauthorized. Please log in again." });
   }
 
   try {
     const newContent = req.body;
     if (!newContent || typeof newContent !== 'object') {
-      throw new Error("Invalid payload format.");
+      return res.status(400).json({ error: "Invalid payload format." });
     }
     
-    memoryContent = newContent;
+    const cleanData = cleanForFirestore(newContent);
+    memoryContent = cleanData;
     console.log("[Content Sync] Memory state updated.");
     
-    // Persistent Cloud Storage
-    await saveSiteContent(newContent);
+    // Persistent Cloud Storage (Firestore)
+    await saveSiteContent(cleanData);
 
-    // Attempt write only, don't crash if it fails (ephemeral storage)
+    // Attempt write to tmp cache
     try {
       if (!process.env.VERCEL) {
-        await fs.writeFile(CONTENT_FILE, JSON.stringify(newContent, null, 2));
-        console.log("[Content Sync] Local storage synchronized.");
+        await fs.writeFile(CONTENT_FILE, JSON.stringify(cleanData, null, 2));
+        console.log("[Content Sync] Local cache synchronized.");
       }
     } catch (fsError) {
-      console.warn("[Content Sync] Local storage write failed.", fsError);
+      // Ephemeral disk write fallback
     }
     
-    res.json({ success: true, persistence: 'firebase' });
+    return res.json({ success: true, persistence: 'firebase', data: cleanData });
   } catch (error: any) {
     console.error("[Content Sync Error]", error);
-    res.status(500).json({ error: "Strategic protocol failure during sync.", details: error.message });
+    return res.status(500).json({ 
+      error: "Strategic protocol failure during database persistence.", 
+      details: error?.message || String(error) 
+    });
   }
 });
 
