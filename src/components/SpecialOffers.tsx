@@ -1,81 +1,91 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Tag, ArrowRight, Sparkles } from 'lucide-react';
+import { Tag, ArrowRight, Sparkles, Check } from 'lucide-react';
 import { useContent } from '../context/ContentContext';
 
 export function SpecialOffers() {
   const { content } = useContent();
   const { offers } = content;
+  const [copied, setCopied] = useState(false);
 
   if (!offers.isActive) return null;
 
+  const handleCopy = () => {
+    navigator.clipboard.writeText(offers.discountCode);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 3000);
+  };
+
   return (
-    <section className="py-24 bg-[#00040a] relative overflow-hidden">
-      {/* Background Orbs */}
-      <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-brand-primary/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-blue-500/10 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/2 pointer-events-none" />
-      
+    <section className="py-20 relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
+          initial={{ opacity: 0, scale: 0.96 }}
           whileInView={{ opacity: 1, scale: 1 }}
-          className="relative bg-gradient-to-br from-white/5 to-transparent p-1 px-1 rounded-[3rem] overflow-hidden group"
+          viewport={{ once: true }}
+          className="relative bg-gradient-to-br from-emerald-500/20 via-white/[0.02] to-transparent p-0.5 rounded-[2.5rem] overflow-hidden group shadow-[0_30px_80px_rgba(0,0,0,0.6)]"
         >
-          {/* Moving border effect */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-brand-primary/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-[2000ms] ease-in-out pointer-events-none" />
+          {/* Moving border highlight */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#00F59B]/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-[2500ms] ease-in-out pointer-events-none" />
           
-          <div className="bg-[#000810] p-12 md:p-16 rounded-[2.9rem] relative overflow-hidden">
-            {/* Animated Glow on hover */}
-            <div className="absolute inset-0 bg-brand-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
-
-            <div className="flex flex-col lg:flex-row items-center justify-between gap-12 lg:gap-24">
-              <div className="lg:w-1/2 space-y-8 items-center lg:items-start text-center lg:text-left">
+          <div className="bg-[#04140b]/90 p-8 sm:p-14 md:p-16 rounded-[2.4rem] relative overflow-hidden backdrop-blur-2xl border border-emerald-500/20">
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-10 lg:gap-16">
+              <div className="lg:w-1/2 space-y-6 text-center lg:text-left">
                 <motion.div 
                   initial={{ opacity: 0, x: -20 }}
                   whileInView={{ opacity: 1, x: 0 }}
-                  className="inline-flex items-center gap-3 bg-white text-black px-8 py-3 rounded-2xl font-black text-[12px] uppercase tracking-[0.3em] shadow-[0_10px_30px_rgba(255,255,255,0.2)]"
+                  className="inline-flex items-center gap-2.5 bg-amber-500/10 border border-amber-500/30 text-amber-300 px-5 py-2 rounded-xl font-bold text-xs uppercase tracking-[0.2em] font-mono"
                 >
-                  <Sparkles className="w-4 h-4 text-orange-500 animate-pulse" />
-                  {offers.badge}
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                  <span>{offers.badge}</span>
                 </motion.div>
                 
                 <div>
-                  <h2 className="text-6xl md:text-8xl font-black uppercase tracking-tighter text-white leading-[0.9] mb-8 bg-gradient-to-b from-white to-white/60 bg-clip-text text-transparent">
+                  <h2 className="text-4xl sm:text-6xl md:text-7xl font-black uppercase tracking-tight text-white leading-[0.95] mb-5 font-display">
                     {offers.title}
                   </h2>
-                  <p className="text-xl text-gray-400 font-light italic leading-relaxed max-w-xl">
+                  <p className="text-lg text-slate-300 font-light leading-relaxed max-w-xl">
                     {offers.description}
                   </p>
                 </div>
               </div>
 
               <div className="lg:w-1/2 w-full max-w-md">
-                <div className="relative p-1 rounded-[2.5rem] bg-gradient-to-br from-brand-primary/30 to-blue-500/30">
-                  <div className="bg-[#000c14] p-12 rounded-[2.4rem] text-center backdrop-blur-3xl">
-                    <Tag className="w-12 h-12 text-brand-primary mx-auto mb-8 animate-bounce" />
-                    <p className="text-[10px] font-black uppercase tracking-[0.5em] text-brand-primary mb-4 opacity-70">EXECUTION CODE</p>
+                <div className="relative p-0.5 rounded-[2rem] bg-gradient-to-br from-[#00F59B]/40 via-emerald-600/30 to-amber-500/30">
+                  <div className="bg-[#020a06] p-8 sm:p-10 rounded-[1.9rem] text-center backdrop-blur-2xl">
+                    <Tag className="w-10 h-10 text-[#00F59B] mx-auto mb-4 animate-bounce" />
+                    <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#00F59B] font-mono mb-3">
+                      STRATEGIC VOUCHER CODE
+                    </p>
                     
-                    <div className="relative group/code cursor-pointer mb-10" onClick={() => {
-                        navigator.clipboard.writeText(offers.discountCode);
-                        alert("Code synchronized to clipboard.");
-                    }}>
-                      <div className="text-4xl font-mono font-black text-white tracking-[0.15em] border-2 border-dashed border-brand-primary/40 p-8 rounded-3xl bg-black/40 group-hover/code:border-brand-primary transition-all shadow-2xl">
+                    <div 
+                      className="relative group/code cursor-pointer mb-8" 
+                      onClick={handleCopy}
+                    >
+                      <div className="text-3xl sm:text-4xl font-mono font-black text-white tracking-[0.15em] border-2 border-dashed border-[#00F59B]/40 p-6 rounded-2xl bg-black/50 group-hover/code:border-[#00F59B] transition-all shadow-inner">
                         {offers.discountCode}
                       </div>
-                      <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-brand-primary text-black text-[8px] font-black px-4 py-1.5 rounded-full opacity-0 group-hover/code:opacity-100 transition-opacity whitespace-nowrap">
-                        CLICK TO COPY
+                      <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-[#00F59B] text-black text-[9px] font-bold px-3 py-1 rounded-full uppercase tracking-wider transition-opacity whitespace-nowrap flex items-center gap-1 shadow-md font-mono">
+                        {copied ? (
+                          <>
+                            <Check className="w-3 h-3" /> COPIED TO CLIPBOARD
+                          </>
+                        ) : (
+                          'CLICK TO COPY'
+                        )}
                       </div>
                     </div>
 
                     <button 
                       onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}
-                      className="w-full bg-brand-primary text-black py-6 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-4 hover:bg-white hover:scale-105 active:scale-95 transition-all shadow-[0_20px_40px_rgba(0,255,156,0.1)]"
+                      className="btn-primary w-full !py-4 text-xs tracking-widest cursor-pointer"
                     >
-                      CLAIM TACTICAL DISCOUNT <ArrowRight className="w-5 h-5" />
+                      <span>CLAIM GROWTH DISCOUNT</span>
+                      <ArrowRight className="w-4 h-4 ml-2" />
                     </button>
                     
-                    <p className="mt-8 text-[8px] text-gray-600 font-black uppercase tracking-widest text-center">
-                      * Limited Time Operational Incentive
+                    <p className="mt-4 text-[9px] text-slate-500 font-medium uppercase tracking-wider text-center font-mono">
+                      * Limited Time Seasonal Allocation
                     </p>
                   </div>
                 </div>

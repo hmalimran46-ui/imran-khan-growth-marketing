@@ -2,5 +2,7 @@
   "name": "Imran Khan Growth Marketing",
   "description": "Professional digital marketing expert portfolio featuring social media marketing, SEO, and paid ads strategies.",
   "requestFramePermissions": [],
-  "majorCapabilities": []
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

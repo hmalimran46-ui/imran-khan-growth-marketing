@@ -11,28 +11,20 @@ export function Portfolio() {
 
   const categories = ['All', 'Ads Design', 'Social Media', 'Branding', 'Banners'];
 
-  const allItems = [
-    { title: "Organic Growth Ecosystem", category: "Social Media", img: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?auto=format&fit=crop&q=80&w=800" },
-    { title: "High-ROAS Ad Funnel", category: "Ads Design", img: "https://images.unsplash.com/photo-1551288049-bbbda536339a?auto=format&fit=crop&q=80&w=800" },
-    { title: "Marketing Data Architecture", category: "Ads Design", img: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800" },
-    { title: "Surgical Brand Identity", category: "Branding", img: "https://images.unsplash.com/photo-1557838923-2985c318be48?auto=format&fit=crop&q=80&w=800" },
-    { title: "Viral Content Blueprint", category: "Social Media", img: "https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?auto=format&fit=crop&q=80&w=800" },
-    { title: "Conversion UI Scaling", category: "Ads Design", img: "https://images.unsplash.com/photo-1522542550221-31fd19575a2d?auto=format&fit=crop&q=80&w=800" },
-    { title: "E-commerce Dominance", category: "Branding", img: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=800" },
-    { title: "Targeted Audience Mining", category: "Social Media", img: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=800" },
-    { title: "Elite Display Banner Set", category: "Banners", img: "https://images.unsplash.com/photo-1626785774573-4b799315345d?auto=format&fit=crop&q=80&w=800" }
-  ];
-
   const filteredItems = content.portfolio.filter(item => filter === 'All' || item.category === filter);
   const itemsToShow = filteredItems.slice(0, displayCount);
 
   return (
-    <section id="portfolio" className="py-24 px-6 relative">
-      <div className="max-w-7xl mx-auto flex flex-col items-center text-center mb-16 gap-6">
-        <span className="text-brand-primary font-bold uppercase tracking-widest text-sm block">Portfolio</span>
-        <h2 className="text-4xl md:text-7xl font-black mb-6 tracking-tighter sm:italic">My Design & <span className="text-gradient font-black">Marketing Work</span></h2>
-        <p className="text-gray-400 font-light leading-relaxed text-lg max-w-2xl">
-          A scalable showcase of high-converting campaigns and creative designs developed to scale modern brands.
+    <section id="portfolio" className="py-28 px-6 relative">
+      <div className="max-w-7xl mx-auto flex flex-col items-center text-center mb-16 gap-4">
+        <span className="text-[#00F59B] font-mono font-bold uppercase tracking-[0.3em] text-xs block">
+          PORTFOLIO & PROVEN CASE STUDIES
+        </span>
+        <h2 className="text-3xl sm:text-5xl md:text-6xl font-black mb-4 tracking-tight uppercase text-white font-display">
+          Client Campaigns & <span className="text-gradient">Growth Results</span>
+        </h2>
+        <p className="text-slate-300 font-light leading-relaxed text-base sm:text-lg max-w-2xl">
+          A showcase of high-converting digital campaigns, visual brand identities, and surgical ad creatives engineered to scale modern brands.
         </p>
       </div>
 
@@ -42,7 +34,7 @@ export function Portfolio() {
           <button
             key={cat}
             onClick={() => { setFilter(cat); setDisplayCount(6); }}
-            className={`px-8 py-3 rounded-xl font-bold transition-all duration-300 ${filter === cat ? 'bg-brand-primary text-black' : 'glass text-gray-400 hover:bg-white/10'}`}
+            className={`px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 cursor-pointer font-mono ${filter === cat ? 'bg-gradient-to-r from-emerald-500 to-[#00F59B] text-black shadow-[0_10px_25px_rgba(0,245,155,0.3)]' : 'bg-[#04140b]/80 text-slate-300 border border-emerald-500/15 hover:bg-white/[0.08] hover:border-emerald-500/40'}`}
           >
             {cat}
           </button>
@@ -55,31 +47,31 @@ export function Portfolio() {
             <motion.div
               layout
               key={item.id}
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
+              exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.4, delay: index * 0.05 }}
-              className="group relative rounded-3xl overflow-hidden aspect-[4/5] glass border-white/5 cursor-pointer"
+              className="group relative rounded-[2rem] overflow-hidden aspect-[4/5] bg-[#04140b]/80 border border-emerald-500/15 shadow-[0_20px_50px_rgba(0,0,0,0.5)] cursor-pointer hover:border-emerald-500/40 transition-all duration-500"
               onClick={() => setSelectedImage(item.image)}
             >
               <img
                  src={item.image}
                  alt={item.title}
-                 className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110 group-hover:rotate-1"
+                 className="w-full h-full object-cover transition-all duration-700 group-hover:scale-105"
                  referrerPolicy="no-referrer"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 flex flex-col justify-end p-10 translate-y-4 group-hover:translate-y-0">
-                 <div className="flex items-center gap-2 text-brand-primary mb-3">
-                   <Tag className="w-4 h-4" />
-                   <span className="text-[10px] font-black uppercase tracking-widest">{item.category}</span>
+              <div className="absolute inset-0 bg-gradient-to-t from-[#020805] via-[#020805]/70 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end p-8">
+                 <div className="flex items-center gap-2 text-[#00F59B] mb-2">
+                   <Tag className="w-3.5 h-3.5" />
+                   <span className="text-[10px] font-mono font-bold uppercase tracking-widest">{item.category}</span>
                  </div>
-                 <h3 className="text-2xl font-black text-white mb-6 leading-tight">{item.title}</h3>
-                 <div className="flex gap-4">
-                   <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center text-black">
-                     <Maximize2 className="w-5 h-5" />
+                 <h3 className="text-xl font-bold text-white mb-6 leading-snug font-display">{item.title}</h3>
+                 <div className="flex gap-3">
+                   <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center text-white">
+                     <Maximize2 className="w-4 h-4" />
                    </div>
-                   <button className="flex-1 glass text-white text-xs font-bold rounded-2xl">
-                     VIEW PROJECT
+                   <button className="flex-1 bg-gradient-to-r from-emerald-500 to-[#00F59B] text-black text-xs font-bold uppercase tracking-wider rounded-xl flex items-center justify-center shadow-lg font-mono">
+                     VIEW ASSET
                    </button>
                  </div>
               </div>
@@ -92,10 +84,10 @@ export function Portfolio() {
         <div className="mt-16 flex justify-center">
            <button 
              onClick={() => setDisplayCount(prev => prev + 3)}
-             className="btn-secondary flex items-center gap-3"
+             className="btn-secondary flex items-center gap-3 cursor-pointer"
             >
-             <Plus className="w-5 h-5" />
-             LOAD MORE PROJECTS
+             <Plus className="w-4 h-4 text-[#00F59B]" />
+             <span>LOAD MORE PROJECTS</span>
            </button>
         </div>
       )}
@@ -107,18 +99,18 @@ export function Portfolio() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex items-center justify-center p-6 md:p-12 cursor-zoom-out"
+            className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-2xl flex items-center justify-center p-6 md:p-12 cursor-zoom-out"
             onClick={() => setSelectedImage(null)}
           >
-            <button className="absolute top-8 right-8 w-12 h-12 glass rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors">
-              <X />
+            <button className="absolute top-8 right-8 w-12 h-12 bg-white/10 border border-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-colors">
+              <X className="w-6 h-6" />
             </button>
             <motion.img 
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               src={selectedImage} 
-              className="max-w-full max-h-[85vh] rounded-2xl shadow-2xl object-contain"
+              className="max-w-full max-h-[85vh] rounded-2xl shadow-2xl object-contain border border-emerald-500/20"
               onClick={(e) => e.stopPropagation()} 
               referrerPolicy="no-referrer"
             />
@@ -133,87 +125,108 @@ export function Pricing() {
   const { content, setContactModalOpen } = useContent();
   const plans = [
     {
-      name: "Basic",
+      name: "Growth Starter",
       price: content.pricing.basic,
       features: [
-        "Growth Marketing Manager",
-        "2 Social Accounts Setup",
-        "7 Custom Growth Posts",
-        "High-Engagement Captions",
-        "Strategic Hashtag Matrix",
-        "Duration: 7 Days Optimization"
+        "Growth Marketing Management",
+        "2 Social Media Channels",
+        "7 High-Impact Creative Posts",
+        "Conversion Copywriting & Captions",
+        "Targeted Hashtag Matrix",
+        "7-Day Optimization Sprint"
       ],
-      buttonText: "GET STARTED"
+      buttonText: "INITIALIZE BASIC",
+      badge: "ESSENTIAL",
+      highlight: false
     },
     {
-      name: "Standard",
+      name: "Scale Accelerator",
       price: content.pricing.standard,
       features: [
-        "Elite Growth Manager",
-        "3 Social Accounts Management",
-        "14 Data-Driven Posts",
-        "Priority Engagement Strategy",
-        "Paid Ads Campaign Design",
-        "Duration: 14 Days Growth"
+        "Dedicated Growth Partner",
+        "3 Social Channels Scale",
+        "14 Data-Driven Creatives & Reels",
+        "Priority Engagement & Retargeting",
+        "Paid Meta & Google Ads Setup",
+        "14-Day Growth Acceleration"
       ],
-      buttonText: "ORDER NOW"
+      buttonText: "INITIALIZE STANDARD",
+      badge: "MOST POPULAR",
+      highlight: true
     },
     {
-      name: "Premium",
+      name: "Enterprise Dominance",
       price: content.pricing.premium,
       features: [
-        "Executive Growth Partner",
-        "4 Social Channels Dominance",
-        "30 Premium Content Pieces",
-        "Full Brand Scaling Suite",
-        "Advanced Ads ROI Management",
-        "Duration: 30 Days Full Scale"
+        "Full Executive Strategy Suite",
+        "Omni-Channel Brand Presence",
+        "30 Premium Multi-Format Assets",
+        "Full Funnel & CRO Scaling",
+        "Advanced ROAS & Pixel Architecture",
+        "30-Day Complete Market Dominance"
       ],
-      buttonText: "GO PREMIUM"
+      buttonText: "INITIALIZE ENTERPRISE",
+      badge: "MAXIMUM ROI",
+      highlight: false
     }
   ];
 
   return (
-    <section id="pricing" className="py-32 px-6 bg-[#00060d]">
+    <section id="pricing" className="py-28 px-6 relative">
       <div className="max-w-7xl mx-auto text-center mb-16">
-         <span className="text-brand-primary font-black uppercase tracking-[0.4em] text-xs mb-6 block">Investment Tiers</span>
-         <h2 className="text-4xl md:text-6xl font-black mb-6 tracking-tighter uppercase italic text-white">Scale Your <span className="text-gradient">Empire</span></h2>
-         <p className="text-gray-400 max-w-2xl mx-auto font-light leading-relaxed text-lg">
-           Strategic packages engineered for high-velocity revenue growth and market dominance. 
+         <span className="text-[#00F59B] font-mono font-bold uppercase tracking-[0.3em] text-xs mb-4 block">
+           INVESTMENT TIERS & PACKAGES
+         </span>
+         <h2 className="text-3xl sm:text-5xl md:text-6xl font-black mb-6 tracking-tight uppercase text-white font-display">
+           Predictable Growth <span className="text-gradient">Packages</span>
+         </h2>
+         <p className="text-slate-300 max-w-2xl mx-auto font-light leading-relaxed text-base sm:text-lg">
+           Strategic service tiers engineered for maximum return on ad spend and sustainable brand authority.
          </p>
       </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-                    {plans.map((plan) => (
+      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {plans.map((plan) => (
           <motion.div
             key={plan.name}
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="relative p-12 rounded-[3.5rem] glass flex flex-col transition-all duration-500 group hover:translate-y-[-12px] border-white/5 bg-white/[0.04] shadow-[0_30px_70px_rgba(0,0,0,0.4)]"
+            className={`relative p-8 sm:p-10 rounded-[2.5rem] flex flex-col transition-all duration-500 group backdrop-blur-2xl ${plan.highlight ? 'bg-[#062414]/90 border-2 border-[#00F59B]/50 shadow-[0_30px_80px_rgba(0,245,155,0.2)] md:-translate-y-2' : 'bg-[#04140b]/80 border border-emerald-500/15 shadow-[0_20px_50px_rgba(0,0,0,0.5)] hover:border-emerald-500/40'}`}
           >
-            <div className="mb-10 group-hover:scale-105 transition-transform duration-500">
-              <h3 className="text-3xl font-black mb-4 text-white uppercase tracking-tighter italic">{plan.name} Package</h3>
+            {plan.highlight && (
+              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-gradient-to-r from-emerald-400 to-[#00F59B] text-black text-[9px] font-mono font-bold uppercase tracking-widest shadow-md">
+                {plan.badge}
+              </div>
+            )}
+
+            <div className="mb-8">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-emerald-400 block mb-2">
+                {!plan.highlight && plan.badge}
+              </span>
+              <h3 className="text-2xl font-black text-white uppercase tracking-tight font-display mb-4">
+                {plan.name}
+              </h3>
               <div className="flex items-baseline gap-2">
-                <span className="text-6xl font-black text-brand-primary drop-shadow-[0_0_20px_rgba(0,255,156,0.5)]">
+                <span className="text-5xl sm:text-6xl font-black text-white font-display tracking-tight">
                   ${plan.price}
                 </span>
-                <span className="text-gray-500 font-black tracking-[0.2em] text-[10px] uppercase ml-2 select-none">/ Investment</span>
+                <span className="text-slate-400 font-mono text-xs uppercase tracking-wider">/ sprint</span>
               </div>
             </div>
 
-            <ul className="space-y-5 mb-12 flex-grow">
+            <ul className="space-y-4 mb-10 flex-grow">
                {plan.features.map((feature, i) => (
-                 <li key={i} className="flex items-start gap-4 text-[13px] text-gray-300 font-medium group/item leading-tight uppercase tracking-wider">
-                   <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-brand-primary shadow-[0_0_12px_rgba(0,255,156,0.8)] group-hover/item:scale-150 transition-transform" />
-                   {feature}
+                 <li key={i} className="flex items-start gap-3 text-xs sm:text-sm text-slate-300 font-medium leading-relaxed">
+                   <div className="mt-1 w-1.5 h-1.5 rounded-full bg-[#00F59B] shadow-[0_0_8px_rgba(0,245,155,0.8)] shrink-0" />
+                   <span>{feature}</span>
                  </li>
                ))}
             </ul>
 
             <button 
               onClick={() => setContactModalOpen(true)}
-              className="w-full py-6 rounded-2xl font-black text-center transition-all duration-500 hover:scale-[1.03] hover:shadow-[0_0_40px_rgba(0,255,156,0.4)] active:scale-95 shadow-2xl bg-brand-primary text-black tracking-[0.3em] text-[10px] uppercase border-none ring-0 outline-none"
+              className={plan.highlight ? 'btn-primary w-full !py-4.5 !text-xs cursor-pointer' : 'btn-secondary w-full !py-4.5 !text-xs hover:border-[#00F59B]/50 cursor-pointer'}
             >
               {plan.buttonText}
             </button>

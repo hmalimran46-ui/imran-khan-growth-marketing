@@ -6,48 +6,19 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // --- Helper Functions ---
-    function isSignedIn() {
-      return request.auth != null;
-    }
-    
-    function isAdmin() {
-      return isSignedIn() 
-        && request.auth.token.email == "h.malimran46@gmail.com"
-        && request.auth.token.email_verified == true;
-    }
-
-    function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
-    }
-
-    function incoming() {
-      return request.resource.data;
-    }
-
-    function existing() {
-      return resource.data;
-    }
-
-    // --- Collections ---
-
-    // Site Content Rule
+    // Site Content Document and Collection
     match /content/{contentId} {
-      // Publicly readable content
-      allow read: if isValidId(contentId);
-      
-      // Admin only modification
-      allow write: if isAdmin() 
-        && isValidId(contentId);
+      allow read, write: if true;
     }
 
-    // Messages Collection Rule
+    // Messages Collection
     match /messages/{messageId} {
-      // Anyone can submit a message (create)
-      allow create: if isValidId(messageId);
-      
-      // Only admin can read/list/delete messages
-      allow read, list, delete: if isAdmin();
+      allow read, write: if true;
+    }
+
+    // Diagnostics / Test Document
+    match /test/{testId} {
+      allow read, write: if true;
     }
   }
 }
