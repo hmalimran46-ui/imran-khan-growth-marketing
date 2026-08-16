@@ -25,24 +25,30 @@ export default function Navbar({ onOpenTracker }: { onOpenTracker?: () => void }
       className="fixed top-0 left-0 w-full z-50 px-4 sm:px-6 py-4 sm:py-5"
     >
       <div className="max-w-7xl mx-auto flex items-center justify-between bg-[#04140b]/85 backdrop-blur-2xl rounded-[2rem] px-6 sm:px-8 py-3.5 border border-emerald-500/20 shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
-        <a href="#home" className="flex items-center gap-3.5 group">
-          <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-[#00F59B] rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(0,245,155,0.35)] group-hover:scale-105 transition-transform">
-            <span className="text-black font-black text-xl font-display">IK</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="font-black text-white tracking-tight uppercase text-sm sm:text-base leading-none font-display">
-              IMRAN <span className="text-[#00F59B]">KHAN</span>
-            </span>
-            <span className="text-[8px] uppercase tracking-[0.25em] text-emerald-400/80 font-mono mt-0.5">
-              Growth Platform
-            </span>
-            {isAdmin && (
-              <Link to="/admin" className="flex items-center gap-1.5 text-[8px] font-black uppercase tracking-[0.2em] text-[#00F59B] mt-1 animate-pulse font-mono">
-                <ShieldCheck className="w-2.5 h-2.5" /> Admin Secure Session
-              </Link>
-            )}
-          </div>
-        </a>
+        <div className="flex items-center gap-3.5">
+          <a href="#home" className="flex items-center gap-3.5 group">
+            <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-[#00F59B] rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(0,245,155,0.35)] group-hover:scale-105 transition-transform">
+              <span className="text-black font-black text-xl font-display">IK</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="font-black text-white tracking-tight uppercase text-sm sm:text-base leading-none font-display">
+                IMRAN <span className="text-[#00F59B]">KHAN</span>
+              </span>
+              <span className="text-[8px] uppercase tracking-[0.25em] text-emerald-400/80 font-mono mt-0.5">
+                Growth Platform
+              </span>
+            </div>
+          </a>
+          {isAdmin && (
+            <Link 
+              to="/admin" 
+              className="hidden lg:flex items-center gap-1.5 text-[8px] font-black uppercase tracking-[0.2em] text-[#00F59B] bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1 rounded-lg animate-pulse font-mono hover:bg-emerald-500/20 transition-all"
+              title="Admin Session Active"
+            >
+              <ShieldCheck className="w-2.5 h-2.5" /> Admin Active
+            </Link>
+          )}
+        </div>
 
         {/* Desktop Menu */}
         <div className="hidden md:flex items-center gap-8">

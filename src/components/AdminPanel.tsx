@@ -4,7 +4,7 @@ import {
   Layout, Save, LogOut, Image, DollarSign, Type, Settings, 
   ChevronRight, X, MessageSquare, Mail, User, Clock, Trash2, 
   Briefcase, Plus, Edit2, Globe, MessageCircle, Loader2, Upload, Link as LinkIcon, Tag, Package, AlertTriangle,
-  CheckCircle2, AlertCircle, ShieldCheck
+  CheckCircle2, AlertCircle, ShieldCheck, ExternalLink, Eye, ChevronDown, Sparkles
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
@@ -27,6 +27,7 @@ export function AdminPanel() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
 
   // Synchronize localContent when database content is loaded
   React.useEffect(() => {
@@ -348,26 +349,41 @@ export function AdminPanel() {
   return (
     <div className="min-h-screen bg-[#00040a] text-white flex flex-col lg:flex-row">
       {/* Sidebar Nav */}
-      <aside className="w-full lg:w-64 bg-[#000810] border-r border-white/5 flex flex-col lg:sticky top-0 lg:h-screen overflow-y-auto z-40">
-        <div className="p-8 pb-4 lg:pb-8 flex justify-between items-center lg:block">
-          <div>
-            <div className="text-xl font-black italic tracking-tighter uppercase mb-2">
-              Admin<span className="text-brand-primary">Control</span>
+      <aside className="w-full lg:w-72 bg-[#000810] border-r border-white/5 flex flex-col lg:sticky top-0 lg:h-screen overflow-y-auto z-40">
+        <div className="p-6 pb-4 lg:p-8 lg:pb-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <div className="text-xl font-black italic tracking-tighter uppercase mb-1">
+                Admin<span className="text-brand-primary">Control</span>
+              </div>
+              <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Growth Architecture OS</p>
             </div>
-            <p className="text-[8px] font-black text-gray-600 uppercase tracking-widest">Growth Architecture OS</p>
+            <div className="lg:hidden w-2.5 h-2.5 rounded-full bg-brand-primary animate-pulse shadow-[0_0_10px_#00ff9c]" />
           </div>
-          {/* Mobile indicator */}
-          <div className="lg:hidden w-2 h-2 rounded-full bg-brand-primary animate-pulse shadow-[0_0_10px_#00ff9c]" />
+
+          {/* Quick Launch Public Website Button in Sidebar */}
+          <a
+            href="/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-6 w-full py-3 px-4 bg-brand-primary/10 hover:bg-brand-primary/20 border border-brand-primary/30 hover:border-brand-primary rounded-xl text-brand-primary text-[9px] font-black uppercase tracking-widest flex items-center justify-between transition-all group shadow-[0_0_20px_rgba(0,255,156,0.1)]"
+          >
+            <div className="flex items-center gap-2.5">
+              <Globe className="w-4 h-4 text-brand-primary group-hover:rotate-45 transition-transform" />
+              <span>View Public Website</span>
+            </div>
+            <ExternalLink className="w-3.5 h-3.5 opacity-70 group-hover:opacity-100" />
+          </a>
         </div>
  
-        <nav className="flex-1 px-4 py-4 space-y-2 flex lg:flex-col overflow-x-auto lg:overflow-visible no-scrollbar scroll-smooth">
+        <nav className="flex-1 px-4 py-2 space-y-1.5 flex lg:flex-col overflow-x-auto lg:overflow-visible no-scrollbar scroll-smooth">
           {(['hero', 'banner', 'about', 'services', 'portfolio', 'pricing', 'contact', 'inbox', 'offers'] as const).map(tab => (
             <button 
               key={tab}
               onClick={() => {
                 setActiveTab(tab);
               }}
-              className={`whitespace-nowrap lg:whitespace-normal flex-shrink-0 text-left text-[10px] font-black uppercase tracking-widest transition-all px-6 py-4 rounded-xl flex items-center justify-between group relative ${activeTab === tab ? 'bg-brand-primary text-black' : 'text-gray-500 hover:text-white hover:bg-white/5'}`}
+              className={`whitespace-nowrap lg:whitespace-normal flex-shrink-0 text-left text-[10px] font-black uppercase tracking-widest transition-all px-5 py-3.5 rounded-xl flex items-center justify-between group relative ${activeTab === tab ? 'bg-brand-primary text-black font-bold' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
             >
               <div className="flex items-center gap-3">
                 {tab === 'hero' && <Layout className="w-4 h-4" />}
@@ -388,26 +404,36 @@ export function AdminPanel() {
           ))}
         </nav>
  
-        <div className="p-6 mt-auto border-t border-white/5 space-y-4 bg-[#010c1a]/50">
+        <div className="p-6 mt-auto border-t border-white/5 space-y-3 bg-[#010c1a]/50">
           <button 
             onClick={handleSave}
             disabled={isSaving}
-            className="w-full py-4 bg-brand-primary text-black rounded-xl font-black text-[10px] uppercase tracking-widest hover:scale-105 transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-3.5 bg-brand-primary text-black rounded-xl font-black text-[10px] uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+            {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
             {isSaving ? 'Syncing...' : 'Save Changes'}
           </button>
-          <button 
-            onClick={handleLogout}
-            className="w-full py-4 glass rounded-xl text-red-500 hover:bg-red-500/10 transition-all font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2"
-          >
-            <LogOut className="w-3 h-3" /> Logout
-          </button>
+          <div className="grid grid-cols-2 gap-2">
+            <a
+              href="/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="py-3 px-2 glass hover:bg-white/10 rounded-xl text-gray-300 hover:text-white transition-all font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-1.5"
+            >
+              <Eye className="w-3 h-3 text-brand-primary" /> Live Site
+            </a>
+            <button 
+              onClick={handleLogout}
+              className="py-3 px-2 glass rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-1.5"
+            >
+              <LogOut className="w-3 h-3" /> Logout
+            </button>
+          </div>
         </div>
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 p-4 sm:p-6 md:p-10 lg:p-16 max-w-full overflow-x-hidden relative">
+      <main className="flex-1 p-4 sm:p-6 md:p-10 lg:p-12 max-w-full overflow-x-hidden relative">
         {/* Floating Toast Notification */}
         <AnimatePresence>
           {notification && (
@@ -444,23 +470,125 @@ export function AdminPanel() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
         >
-          {/* Top Status & Quick Save Header Bar */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+          {/* Top Status & Navigation Header Bar */}
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8 pb-6 border-b border-white/5">
             <div className="flex items-center gap-3">
               <div className="w-3 h-3 rounded-full bg-brand-primary animate-pulse shadow-[0_0_10px_#00ff9c]" />
-              <p className="text-brand-primary text-[10px] font-black uppercase tracking-widest">
-                Database Source of Truth • Multi-Device Sync Active
-              </p>
+              <div>
+                <p className="text-brand-primary text-[10px] font-black uppercase tracking-widest">
+                  Database Source of Truth • Multi-Device Sync Active
+                </p>
+                <p className="text-[9px] text-gray-500 font-mono">Changes persist automatically to public live website</p>
+              </div>
             </div>
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={isSaving}
-              className="py-3 px-6 bg-brand-primary text-black rounded-xl font-black text-[10px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-              {isSaving ? 'Saving to Database...' : 'Save Changes'}
-            </button>
+
+            {/* Action Buttons: View Public Website, Save Changes, Profile Menu */}
+            <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+              {/* PRIMARY PUBLIC WEBSITE PREVIEW BUTTON */}
+              <a
+                href="/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="py-3 px-5 bg-white/5 hover:bg-brand-primary/10 border border-white/10 hover:border-brand-primary/40 text-white hover:text-brand-primary rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-lg flex items-center gap-2 group cursor-pointer"
+                title="Open live public website in a new browser tab"
+              >
+                <Eye className="w-3.5 h-3.5 text-brand-primary group-hover:scale-110 transition-transform" />
+                <span>VIEW PUBLIC WEBSITE</span>
+                <ExternalLink className="w-3 h-3 opacity-60 group-hover:opacity-100 transition-opacity" />
+              </a>
+
+              {/* SAVE BUTTON */}
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={isSaving}
+                className="py-3 px-6 bg-brand-primary text-black rounded-xl font-black text-[10px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              >
+                {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                {isSaving ? 'Saving to Database...' : 'Save Changes'}
+              </button>
+
+              {/* ADMIN PROFILE DROPDOWN */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                  className="py-2.5 px-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl flex items-center gap-2 text-white transition-all cursor-pointer"
+                >
+                  <div className="w-6 h-6 rounded-lg bg-brand-primary/20 border border-brand-primary/40 flex items-center justify-center text-[10px] font-black text-brand-primary">
+                    IK
+                  </div>
+                  <span className="hidden xl:inline text-[9px] font-mono text-gray-300">h.malimran46@gmail.com</span>
+                  <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform ${isProfileDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {isProfileDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-72 bg-[#000d1a] border border-white/15 rounded-2xl shadow-2xl p-2 z-50 backdrop-blur-2xl">
+                    <div className="px-4 py-3 border-b border-white/5">
+                      <div className="flex items-center gap-2 mb-1">
+                        <ShieldCheck className="w-3.5 h-3.5 text-brand-primary" />
+                        <span className="text-[8px] font-black uppercase tracking-widest text-gray-400">Authenticated Administrator</span>
+                      </div>
+                      <p className="text-xs font-bold text-white truncate font-mono">h.malimran46@gmail.com</p>
+                    </div>
+                    
+                    <div className="py-2 space-y-1">
+                      <a
+                        href="/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => setIsProfileDropdownOpen(false)}
+                        className="w-full px-3 py-2.5 text-left text-[10px] font-black uppercase tracking-widest text-gray-200 hover:text-white hover:bg-white/10 rounded-xl flex items-center justify-between transition-all"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Globe className="w-3.5 h-3.5 text-brand-primary" />
+                          <span>View Public Website</span>
+                        </div>
+                        <ExternalLink className="w-3 h-3 text-gray-400" />
+                      </a>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveTab('about');
+                          setIsProfileDropdownOpen(false);
+                        }}
+                        className="w-full px-3 py-2.5 text-left text-[10px] font-black uppercase tracking-widest text-gray-200 hover:text-white hover:bg-white/10 rounded-xl flex items-center gap-2.5 transition-all"
+                      >
+                        <User className="w-3.5 h-3.5 text-blue-400" />
+                        <span>Admin Profile & Bio</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsProfileDropdownOpen(false);
+                          handleSave();
+                        }}
+                        className="w-full px-3 py-2.5 text-left text-[10px] font-black uppercase tracking-widest text-brand-primary hover:bg-brand-primary/10 rounded-xl flex items-center gap-2.5 transition-all"
+                      >
+                        <Save className="w-3.5 h-3.5" />
+                        <span>Quick Save All Data</span>
+                      </button>
+                    </div>
+
+                    <div className="pt-2 border-t border-white/5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsProfileDropdownOpen(false);
+                          handleLogout();
+                        }}
+                        className="w-full px-3 py-2.5 text-left text-[10px] font-black uppercase tracking-widest text-red-400 hover:bg-red-500/10 rounded-xl flex items-center gap-2.5 transition-all"
+                      >
+                        <LogOut className="w-3.5 h-3.5" />
+                        <span>Sign Out</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Header */}

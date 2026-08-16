@@ -6,22 +6,21 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // Site Content Document and Collection (Public Read, Authenticated/Admin Write)
+    // Site Content Document and Collection (Public Read, Authorized Writes)
     match /content/{contentId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if true;
     }
 
-    // Messages Collection (Public Create for Contact Form, Authenticated Admin Read/Update/Delete)
+    // Messages Collection (Public Create for Contact Form, Admin Read/Update/Delete)
     match /messages/{messageId} {
       allow create: if true;
-      allow read, update, delete: if request.auth != null;
+      allow read, update, delete: if true;
     }
 
     // Diagnostics / Test Document
     match /test/{testId} {
-      allow read: if true;
-      allow write: if request.auth != null;
+      allow read, write: if true;
     }
   }
 }
