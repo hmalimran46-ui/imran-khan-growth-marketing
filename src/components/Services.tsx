@@ -18,7 +18,7 @@ export function About() {
         reader.onloadend = async () => {
           try {
             const { compressImage } = await import('../lib/imageUtils');
-            const compressed = await compressImage(reader.result as string, 3);
+            const compressed = await compressImage(reader.result as string, 0.35, 1200);
             updateContent({ about: { ...content.about, profileImage: compressed } })
               .finally(() => setIsUploading(false));
           } catch (err) {

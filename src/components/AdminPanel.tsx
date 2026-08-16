@@ -4,11 +4,13 @@ import {
   Layout, Save, LogOut, Image, DollarSign, Type, Settings, 
   ChevronRight, X, MessageSquare, Mail, User, Clock, Trash2, 
   Briefcase, Plus, Edit2, Globe, MessageCircle, Loader2, Upload, Link as LinkIcon, Tag, Package, AlertTriangle,
-  CheckCircle2, AlertCircle
+  CheckCircle2, AlertCircle, ShieldCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { compressImage } from '../lib/imageUtils';
+import { auth } from '../lib/firebase';
+import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 
 export function AdminPanel() {
   const { content, updateContent, isAdmin, setIsAdmin } = useContent();
@@ -37,13 +39,27 @@ export function AdminPanel() {
   React.useEffect(() => {
     const initializeAuth = async () => {
       try {
-        const res = await fetch('/api/auth-status', { credentials: 'include' });
+        const token = localStorage.getItem('admin_auth_token') || '';
+        const headers: Record<string, string> = {};
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+          headers['x-admin-token'] = token;
+        }
+
+        const res = await fetch('/api/auth-status', { 
+          credentials: 'include',
+          headers 
+        });
         const data = await res.json();
         if (data.isAdmin) {
           setIsAdmin(true);
+        } else if (token) {
+          // Token expired or invalid
+          localStorage.removeItem('admin_auth_token');
+          setIsAdmin(false);
         }
       } catch (e) {
-        console.error("Auth status verification failed.");
+        console.error("Auth status verification failed:", e);
       }
     };
     
@@ -107,8 +123,14 @@ export function AdminPanel() {
       });
       
       if (res.ok) {
+        const data = await res.json();
+        if (data.token) {
+          localStorage.setItem('admin_auth_token', data.token);
+        }
         setIsAdmin(true);
         setError('');
+        setNotification({ type: 'success', message: 'Identity verified. Mission Control access authorized.' });
+        setTimeout(() => setNotification(null), 3000);
       } else {
         const data = await res.json().catch(() => ({ error: `Protocol Error: ${res.status}` }));
         setError(data.error || `Access Denied (Code: ${res.status})`);
@@ -121,15 +143,62 @@ export function AdminPanel() {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    setError('');
+    setIsConnecting(true);
+    try {
+      const provider = new GoogleAuthProvider();
+      const userCredential = await signInWithPopup(auth, provider);
+      const user = userCredential.user;
+      
+      if (!user.email) {
+        throw new Error("No verified email returned from Google authentication.");
+      }
+
+      const idToken = await user.getIdToken();
+      const res = await fetch('/api/google-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email: user.email, idToken })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.token) {
+          localStorage.setItem('admin_auth_token', data.token);
+        }
+        setIsAdmin(true);
+        setError('');
+        setNotification({ type: 'success', message: `Welcome, Administrator (${user.email})` });
+        setTimeout(() => setNotification(null), 3000);
+      } else {
+        const data = await res.json().catch(() => ({ error: 'Access Denied: Only authorized administrator account can access.' }));
+        setError(data.error || 'Access Denied: Only authorized administrator account can access.');
+      }
+    } catch (err: any) {
+      console.error("Google Auth failed:", err);
+      setError(`Google Sign-In notice: ${err?.message || 'Authentication flow was cancelled or unavailable.'}`);
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
   const handleLogout = async () => {
+    const token = localStorage.getItem('admin_auth_token');
+    localStorage.removeItem('admin_auth_token');
     try {
       await fetch('/api/logout', { 
         method: 'POST',
-        credentials: 'include'
+        credentials: 'include',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
-      setIsAdmin(false);
     } catch (err) {
-      console.error("Logout failed");
+      console.error("Logout failed:", err);
+    } finally {
+      setIsAdmin(false);
+      setNotification({ type: 'success', message: 'Logged out successfully.' });
+      setTimeout(() => setNotification(null), 3000);
     }
   };
 
@@ -245,6 +314,32 @@ export function AdminPanel() {
               {!isConnecting && <ChevronRight className="w-5 h-5" />}
             </button>
           </form>
+
+          <div className="my-6 flex items-center gap-4">
+            <div className="flex-1 h-px bg-white/10" />
+            <span className="text-[9px] font-black uppercase tracking-widest text-gray-500">OR</span>
+            <div className="flex-1 h-px bg-white/10" />
+          </div>
+
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            disabled={isConnecting}
+            className="w-full py-4 px-6 bg-white/5 border border-white/10 hover:border-brand-primary/50 hover:bg-white/10 text-white rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+            </svg>
+            Sign in with Google Admin
+          </button>
+
+          <div className="mt-8 pt-6 border-t border-white/5 flex items-center justify-center gap-2 text-gray-500 text-[9px] font-bold uppercase tracking-widest">
+            <ShieldCheck className="w-3.5 h-3.5 text-brand-primary" />
+            <span>Cryptographic Session Protocol</span>
+          </div>
         </motion.div>
       </div>
     );

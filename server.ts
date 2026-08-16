@@ -6,6 +6,7 @@ import fsSync from "fs";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import dotenv from "dotenv";
+import crypto from "crypto";
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, getDoc, setDoc, collection, addDoc, getDocs, deleteDoc, updateDoc } from 'firebase/firestore';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
@@ -274,6 +275,79 @@ async function syncWithFirestore() {
 
 syncWithFirestore().catch(err => console.error("[Firebase] Sync task error:", err));
 
+// --- Token Generation & Admin Authentication Engine ---
+const ADMIN_SECRET = process.env.ADMIN_SECRET || process.env.SESSION_SECRET || "imran_khan_growth_platform_secure_auth_key_2026";
+
+function generateAdminToken(email: string): string {
+  const payload = {
+    email: email.toLowerCase().trim(),
+    role: 'admin',
+    iat: Date.now(),
+    exp: Date.now() + 60 * 24 * 60 * 60 * 1000 // 60 days validity
+  };
+  const payloadB64 = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const signature = crypto.createHmac('sha256', ADMIN_SECRET).update(payloadB64).digest('base64url');
+  return `${payloadB64}.${signature}`;
+}
+
+function verifyAdminToken(tokenString: string | undefined): { valid: boolean; email?: string } {
+  if (!tokenString || typeof tokenString !== 'string') return { valid: false };
+  
+  const cleanToken = tokenString.startsWith('Bearer ') ? tokenString.slice(7).trim() : tokenString.trim();
+  const parts = cleanToken.split('.');
+  if (parts.length !== 2) return { valid: false };
+
+  const [payloadB64, signature] = parts;
+  const expectedSig = crypto.createHmac('sha256', ADMIN_SECRET).update(payloadB64).digest('base64url');
+  
+  if (signature.length !== expectedSig.length) return { valid: false };
+  const isValid = crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSig));
+  if (!isValid) return { valid: false };
+
+  try {
+    const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf-8'));
+    if (payload.exp && Date.now() > payload.exp) {
+      return { valid: false };
+    }
+    if (payload.role === 'admin' && (payload.email === adminEmail || payload.email.includes("h.malimran46"))) {
+      return { valid: true, email: payload.email };
+    }
+    return { valid: false };
+  } catch {
+    return { valid: false };
+  }
+}
+
+function isAuthorizedAdmin(req: express.Request): boolean {
+  // 1. Check Authorization header (Bearer token)
+  const authHeader = req.headers.authorization;
+  if (authHeader) {
+    const result = verifyAdminToken(authHeader);
+    if (result.valid) return true;
+  }
+
+  // 2. Check X-Admin-Token custom header
+  const customHeader = req.headers['x-admin-token'] as string;
+  if (customHeader) {
+    const result = verifyAdminToken(customHeader);
+    if (result.valid) return true;
+  }
+
+  // 3. Check admin_token cookie
+  const cookieToken = req.cookies?.admin_token;
+  if (cookieToken) {
+    const result = verifyAdminToken(cookieToken);
+    if (result.valid) return true;
+  }
+
+  // 4. Fallback cookie check
+  if (req.cookies?.admin_session === "true") {
+    return true;
+  }
+
+  return false;
+}
+
 // --- API Routes ---
 // Health Check
 app.get("/api/health", (req, res) => {
@@ -282,46 +356,109 @@ app.get("/api/health", (req, res) => {
 
 // Check Auth Status
 app.get("/api/auth-status", (req, res) => {
-  const session = req.cookies.admin_session;
-  res.json({ isAdmin: session === "true" });
+  const isAuth = isAuthorizedAdmin(req);
+  res.json({ 
+    isAdmin: isAuth, 
+    email: isAuth ? adminEmail : null,
+    verifiedAt: Date.now()
+  });
 });
 
-// Login
+// Direct Admin Login (Email & Password)
 app.post("/api/login", (req, res) => {
   try {
     const { email, password } = req.body;
-    const adminEmail = (process.env.ADMIN_EMAIL || "h.malimran46@gmail.com").toLowerCase();
-    const adminPassword = process.env.ADMIN_PASSWORD || "Hm4648@#";
+    console.log(`[Admin Auth Attempt] Received identity: ${email}`);
 
-    console.log(`[Login Attempt] Identity: ${email}`);
+    if (email?.toLowerCase().trim() === adminEmail && password === adminPassword) {
+      const token = generateAdminToken(adminEmail);
 
-    if (email?.toLowerCase() === adminEmail && password === adminPassword) {
-      // Setting set-cookie header with 30 days expiration
-      res.cookie("admin_session", "true", { 
+      // Set cookie with cross-origin friendly configuration
+      res.cookie("admin_token", token, { 
         httpOnly: true, 
         secure: true, 
-        sameSite: 'lax', 
+        sameSite: 'none', 
         path: '/',
-        maxAge: 30 * 24 * 60 * 60 * 1000 
+        maxAge: 60 * 24 * 60 * 60 * 1000 
       });
-      console.log(`[Login Success] Credentials verified.`);
-      return res.json({ success: true });
+
+      res.cookie("admin_session", "true", { 
+        httpOnly: false, 
+        secure: true, 
+        sameSite: 'none', 
+        path: '/',
+        maxAge: 60 * 24 * 60 * 60 * 1000 
+      });
+
+      console.log(`[Admin Auth Success] Session token generated for: ${adminEmail}`);
+      return res.json({ 
+        success: true, 
+        token, 
+        admin: { email: adminEmail, role: 'admin' } 
+      });
     } else {
-      console.warn(`[Login Failed] Invalid credentials for: ${email}`);
+      console.warn(`[Admin Auth Failure] Incorrect credentials for: ${email}`);
       return res.status(401).json({ error: "Identity Rejected. Incorrect Credentials." });
     }
   } catch (error) {
-    console.error(`[Login Crash]`, error);
+    console.error(`[Admin Auth Error]`, error);
     res.status(500).json({ error: "Mission Control Internal Protocol Error." });
+  }
+});
+
+// Google Admin Login Verification
+app.post("/api/google-login", (req, res) => {
+  try {
+    const { email } = req.body;
+    console.log(`[Google Auth Attempt] Identity: ${email}`);
+
+    if (email && email.toLowerCase().trim() === adminEmail) {
+      const token = generateAdminToken(adminEmail);
+
+      res.cookie("admin_token", token, { 
+        httpOnly: true, 
+        secure: true, 
+        sameSite: 'none', 
+        path: '/',
+        maxAge: 60 * 24 * 60 * 60 * 1000 
+      });
+
+      res.cookie("admin_session", "true", { 
+        httpOnly: false, 
+        secure: true, 
+        sameSite: 'none', 
+        path: '/',
+        maxAge: 60 * 24 * 60 * 60 * 1000 
+      });
+
+      console.log(`[Google Auth Success] Authorized admin access for: ${adminEmail}`);
+      return res.json({ 
+        success: true, 
+        token, 
+        admin: { email: adminEmail, role: 'admin' } 
+      });
+    } else {
+      console.warn(`[Google Auth Denied] Non-admin email attempted: ${email}`);
+      return res.status(403).json({ error: "Access Denied. Only the authorized administrator account can access Mission Control." });
+    }
+  } catch (error) {
+    console.error(`[Google Auth Error]`, error);
+    res.status(500).json({ error: "Mission Control Google Auth Protocol Error." });
   }
 });
 
 // Logout
 app.post("/api/logout", (req, res) => {
-  res.clearCookie("admin_session", {
+  res.clearCookie("admin_token", {
     httpOnly: true,
     secure: true,
-    sameSite: 'lax',
+    sameSite: 'none',
+    path: '/'
+  });
+  res.clearCookie("admin_session", {
+    httpOnly: false,
+    secure: true,
+    sameSite: 'none',
     path: '/'
   });
   res.json({ success: true });
@@ -375,10 +512,12 @@ app.post("/api/contact", async (req, res) => {
 
 // Update Content (Admin Only with Direct Firestore Persistence)
 app.post("/api/content", async (req, res) => {
-  const session = req.cookies.admin_session;
-  if (session !== "true") {
-    console.warn("[Content Update] Unauthorized attempt blocked.");
-    return res.status(401).json({ error: "Unauthorized. Please log in again." });
+  if (!isAuthorizedAdmin(req)) {
+    console.warn("[Content Update] Unauthorized save attempt rejected.");
+    return res.status(401).json({ 
+      error: "UNAUTHORIZED: Admin session token missing or expired. Please log in again.",
+      code: "AUTH_REQUIRED"
+    });
   }
 
   try {
@@ -389,7 +528,7 @@ app.post("/api/content", async (req, res) => {
     
     const cleanData = cleanForFirestore(newContent);
     memoryContent = cleanData;
-    console.log("[Content Sync] Memory state updated.");
+    console.log("[Content Sync] Verified Admin write in progress...");
     
     // Persistent Cloud Storage (Firestore)
     await saveSiteContent(cleanData);
@@ -404,6 +543,7 @@ app.post("/api/content", async (req, res) => {
       // Ephemeral disk write fallback
     }
     
+    console.log("[Content Sync Success] All changes permanently committed to Firestore.");
     return res.json({ success: true, persistence: 'firebase', data: cleanData });
   } catch (error: any) {
     console.error("[Content Sync Error]", error);

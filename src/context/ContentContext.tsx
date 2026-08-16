@@ -116,7 +116,7 @@ const defaultContent: ContentState = {
 
 interface ContentContextType {
   content: ContentState;
-  updateContent: (newContent: Partial<ContentState>) => Promise<void>;
+  updateContent: (newContent: Partial<ContentState>) => Promise<{ success: boolean; persistence?: string; data?: ContentState }>;
   addMessage: (msg: Omit<Message, 'id' | 'timestamp' | 'status' | 'orderId'>) => Promise<string>;
   updateMessageStatus: (messageId: string, status: MessageStatus) => Promise<void>;
   isAdmin: boolean;
@@ -147,9 +147,16 @@ export function ContentProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
+        const token = localStorage.getItem('admin_auth_token') || '';
+        const authHeaders: Record<string, string> = {};
+        if (token) {
+          authHeaders['Authorization'] = `Bearer ${token}`;
+          authHeaders['x-admin-token'] = token;
+        }
+
         const [contentRes, authRes] = await Promise.all([
-          fetch('/api/content', { credentials: 'include' }),
-          fetch('/api/auth-status', { credentials: 'include' })
+          fetch('/api/content', { credentials: 'include', headers: authHeaders }),
+          fetch('/api/auth-status', { credentials: 'include', headers: authHeaders })
         ]);
         
         if (contentRes.ok) {
@@ -204,10 +211,19 @@ export function ContentProvider({ children }: { children: React.ReactNode }) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
 
+    const token = localStorage.getItem('admin_auth_token') || '';
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+      headers['x-admin-token'] = token;
+    }
+
     try {
       const res = await fetch('/api/content', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         credentials: 'include',
         signal: controller.signal,
         body: JSON.stringify(finalUpdated)
